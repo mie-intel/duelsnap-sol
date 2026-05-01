@@ -1,0 +1,13 @@
+pub const MAX_IPFS_HASH_LEN: usize = 80;
+pub const MAX_VERIFIED_IDS_PER_PAGE: usize = 256;
+pub const MAX_SESSION_QUESTIONS: usize = 10;
+pub const PLAY_WINDOW_SECONDS: i64 = 10 * 60;
+pub const REVEAL_WINDOW_SECONDS: i64 = 2 * 60;
+pub const STATUS_WAITING: u8 = 0;
+pub const STATUS_PLAYING: u8 = 1;
+pub const STATUS_COMMITTING: u8 = 2;
+pub const STATUS_REVEALING: u8 = 3;
+pub const STATUS_DONE: u8 = 4;
+pub const WINNER_BPS: u64 = 8_700;
+pub const CONTRIBUTOR_BPS: u64 = 1_000;
+pub const BPS_DENOMINATOR: u64 = 10_000;
