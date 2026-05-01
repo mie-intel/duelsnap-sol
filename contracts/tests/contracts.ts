@@ -98,6 +98,98 @@ describe("duelpic", () => {
     );
   }
 
+  function payer() {
+    return (provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair })
+      .payer;
+  }
+
+  async function topUpPlayers(amount = 1_000_000) {
+    const mintAuthority = payer();
+    await mintTo(
+      provider.connection,
+      mintAuthority,
+      paymentMint,
+      playerToken,
+      mintAuthority,
+      amount
+    );
+    await mintTo(
+      provider.connection,
+      mintAuthority,
+      paymentMint,
+      player2Token,
+      mintAuthority,
+      amount
+    );
+  }
+
+  async function createPvpSession(seed: number, questionIds = [1]) {
+    await topUpPlayers();
+    const sessionId = Buffer.alloc(32, seed);
+    const session = sessionPda(sessionId);
+    const vaultAuthority = sessionVaultAuthority(session);
+    const sessionVault = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer(),
+        paymentMint,
+        vaultAuthority,
+        true
+      )
+    ).address;
+
+    await program.methods
+      .createSession(
+        [...sessionId],
+        new anchor.BN(300_000),
+        questionIds.map((id) => new anchor.BN(id))
+      )
+      .accounts({
+        config: configPda,
+        session,
+        player1: provider.wallet.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    return { sessionId, session, vaultAuthority, sessionVault };
+  }
+
+  async function joinPvpSession(session: anchor.web3.PublicKey) {
+    const vaultAuthority = sessionVaultAuthority(session);
+    const sessionVault = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer(),
+        paymentMint,
+        vaultAuthority,
+        true
+      )
+    ).address;
+
+    await program.methods
+      .joinSession()
+      .accounts({
+        config: configPda,
+        session,
+        player2: player2.publicKey,
+        paymentMint,
+        player2Token,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([player2])
+      .rpc();
+
+    return { vaultAuthority, sessionVault };
+  }
+
   it("initializes config", async () => {
     const payer = (
       provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair }
@@ -660,6 +752,288 @@ describe("duelpic", () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       assert.include(message, "UnauthorizedRelayer");
+    }
+  });
+
+  it("rejects invalid pvp session creation inputs", async () => {
+    await topUpPlayers();
+
+    for (const [seed, wager, questions, expected] of [
+      [10, 0, [new anchor.BN(1)], "InvalidWager"],
+      [11, 300_000, [], "InvalidQuestionIds"],
+      [
+        12,
+        300_000,
+        Array.from({ length: 11 }, () => new anchor.BN(1)),
+        "InvalidQuestionIds",
+      ],
+    ] as const) {
+      const sessionId = Buffer.alloc(32, seed);
+      const session = sessionPda(sessionId);
+      const vaultAuthority = sessionVaultAuthority(session);
+      const sessionVault = (
+        await getOrCreateAssociatedTokenAccount(
+          provider.connection,
+          payer(),
+          paymentMint,
+          vaultAuthority,
+          true
+        )
+      ).address;
+
+      try {
+        await program.methods
+          .createSession([...sessionId], new anchor.BN(wager), questions)
+          .accounts({
+            config: configPda,
+            session,
+            player1: provider.wallet.publicKey,
+            paymentMint,
+            player1Token: playerToken,
+            sessionVaultAuthority: vaultAuthority,
+            sessionVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .rpc();
+        assert.fail(`create session should fail with ${expected}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        assert.include(message, expected);
+      }
+    }
+  });
+
+  it("rejects invalid pvp join attempts", async () => {
+    const { session, vaultAuthority, sessionVault } = await createPvpSession(
+      13
+    );
+
+    try {
+      await program.methods
+        .joinSession()
+        .accounts({
+          config: configPda,
+          session,
+          player2: provider.wallet.publicKey,
+          paymentMint,
+          player2Token: playerToken,
+          sessionVaultAuthority: vaultAuthority,
+          sessionVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+      assert.fail("same player join should fail");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "InvalidPlayer");
+    }
+
+    await joinPvpSession(session);
+
+    try {
+      await program.methods
+        .joinSession()
+        .accounts({
+          config: configPda,
+          session,
+          player2: provider.wallet.publicKey,
+          paymentMint,
+          player2Token: playerToken,
+          sessionVaultAuthority: vaultAuthority,
+          sessionVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+      assert.fail("joined session should reject another join");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "WrongStatus");
+    }
+  });
+
+  it("rejects invalid pvp commits", async () => {
+    const { session } = await createPvpSession(14);
+    await joinPvpSession(session);
+
+    try {
+      await program.methods
+        .commitAnswers(Array.from(Buffer.alloc(32, 1)))
+        .accounts({
+          session,
+          player: relayer.publicKey,
+        })
+        .signers([relayer])
+        .rpc();
+      assert.fail("outsider commit should fail");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "InvalidPlayer");
+    }
+
+    await program.methods
+      .commitAnswers(Array.from(Buffer.alloc(32, 1)))
+      .accounts({
+        session,
+        player: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    try {
+      await program.methods
+        .commitAnswers(Array.from(Buffer.alloc(32, 2)))
+        .accounts({
+          session,
+          player: provider.wallet.publicKey,
+        })
+        .rpc();
+      assert.fail("double commit should fail");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "AlreadyCommitted");
+    }
+  });
+
+  it("rejects invalid pvp relayer winner", async () => {
+    const { session, vaultAuthority, sessionVault } = await createPvpSession(
+      15
+    );
+    await joinPvpSession(session);
+    const royalty = royaltyPda(provider.wallet.publicKey);
+    const invalidWinner = anchor.web3.Keypair.generate().publicKey;
+
+    try {
+      await program.methods
+        .resolveByRelayer(invalidWinner, 1, 0)
+        .accounts({
+          config: configPda,
+          session,
+          relayer: relayer.publicKey,
+          paymentMint,
+          player1Token: playerToken,
+          player2Token,
+          treasuryToken,
+          royaltyVaultAuthority,
+          royaltyVault,
+          sessionVaultAuthority: vaultAuthority,
+          sessionVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .remainingAccounts([
+          { pubkey: questionPda(1), isWritable: true, isSigner: false },
+          { pubkey: royalty, isWritable: true, isSigner: false },
+        ])
+        .signers([relayer])
+        .rpc();
+      assert.fail("invalid winner should fail");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "InvalidPlayer");
+    }
+  });
+
+  it("settles pvp for player2 winner and tie economics", async () => {
+    const player2Win = await createPvpSession(16);
+    await joinPvpSession(player2Win.session);
+    const royalty = royaltyPda(provider.wallet.publicKey);
+    const p2Before = Number(
+      (await getAccount(provider.connection, player2Token)).amount
+    );
+
+    await program.methods
+      .resolveByRelayer(player2.publicKey, 1, 3)
+      .accounts({
+        config: configPda,
+        session: player2Win.session,
+        relayer: relayer.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        player2Token,
+        treasuryToken,
+        royaltyVaultAuthority,
+        royaltyVault,
+        sessionVaultAuthority: player2Win.vaultAuthority,
+        sessionVault: player2Win.sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .remainingAccounts([
+        { pubkey: questionPda(1), isWritable: true, isSigner: false },
+        { pubkey: royalty, isWritable: true, isSigner: false },
+      ])
+      .signers([relayer])
+      .rpc();
+
+    const p2After = Number(
+      (await getAccount(provider.connection, player2Token)).amount
+    );
+    assert.strictEqual(p2After - p2Before, 522_000);
+
+    const tied = await createPvpSession(17);
+    await joinPvpSession(tied.session);
+    const p1BeforeTie = Number(
+      (await getAccount(provider.connection, playerToken)).amount
+    );
+    const p2BeforeTie = Number(
+      (await getAccount(provider.connection, player2Token)).amount
+    );
+
+    await program.methods
+      .resolveByRelayer(anchor.web3.PublicKey.default, 2, 2)
+      .accounts({
+        config: configPda,
+        session: tied.session,
+        relayer: relayer.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        player2Token,
+        treasuryToken,
+        royaltyVaultAuthority,
+        royaltyVault,
+        sessionVaultAuthority: tied.vaultAuthority,
+        sessionVault: tied.sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .remainingAccounts([
+        { pubkey: questionPda(1), isWritable: true, isSigner: false },
+        { pubkey: royalty, isWritable: true, isSigner: false },
+      ])
+      .signers([relayer])
+      .rpc();
+
+    const p1AfterTie = Number(
+      (await getAccount(provider.connection, playerToken)).amount
+    );
+    const p2AfterTie = Number(
+      (await getAccount(provider.connection, player2Token)).amount
+    );
+    assert.strictEqual(p1AfterTie - p1BeforeTie, 261_000);
+    assert.strictEqual(p2AfterTie - p2BeforeTie, 261_000);
+  });
+
+  it("rejects timeout claim before deadline", async () => {
+    const { session, vaultAuthority, sessionVault } = await createPvpSession(
+      18
+    );
+
+    try {
+      await program.methods
+        .claimTimeout()
+        .accounts({
+          config: configPda,
+          session,
+          claimant: provider.wallet.publicKey,
+          paymentMint,
+          sessionVaultAuthority: vaultAuthority,
+          sessionVault,
+          claimantToken: playerToken,
+          treasuryToken,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+      assert.fail("timeout before deadline should fail");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "DeadlineNotReached");
     }
   });
 });
