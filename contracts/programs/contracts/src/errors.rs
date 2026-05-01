@@ -14,8 +14,6 @@ pub enum DuelpicError {
     UnauthorizedVerifier,
     #[msg("Relayer authority mismatch")]
     UnauthorizedRelayer,
-    #[msg("Difficulty must be 1, 2, or 3")]
-    InvalidDifficulty,
     #[msg("Question already verified")]
     AlreadyVerified,
     #[msg("Verified pool page mismatch")]

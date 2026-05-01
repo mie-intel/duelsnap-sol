@@ -38,8 +38,8 @@ pub mod duelpic {
         instructions::questions::initialize_verified_pool(ctx, page)
     }
 
-    pub fn verify_question(ctx: Context<VerifyQuestion>, difficulty: u8, page: u64) -> Result<()> {
-        instructions::questions::verify_question(ctx, difficulty, page)
+    pub fn verify_question(ctx: Context<VerifyQuestion>, page: u64) -> Result<()> {
+        instructions::questions::verify_question(ctx, page)
     }
 
     pub fn initialize_daily_play(ctx: Context<InitializeDailyPlay>, day_id: i64) -> Result<()> {

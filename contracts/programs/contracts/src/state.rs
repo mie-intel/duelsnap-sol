@@ -24,7 +24,6 @@ pub struct Question {
     #[max_len(80)]
     pub ipfs_hash: String,
     pub is_verified: bool,
-    pub difficulty: u8,
     pub times_played: u64,
     pub royalty_earned: u64,
     pub bump: u8,

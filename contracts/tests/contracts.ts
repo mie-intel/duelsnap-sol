@@ -296,7 +296,6 @@ describe("duelpic", () => {
     assert.ok(record.contributor.equals(provider.wallet.publicKey));
     assert.strictEqual(record.ipfsHash, "QmDuelPicMockHash");
     assert.strictEqual(record.isVerified, false);
-    assert.strictEqual(record.difficulty, 0);
   });
 
   it("initializes verified pool page", async () => {
@@ -323,7 +322,7 @@ describe("duelpic", () => {
   it("rejects non-verifier approval", async () => {
     try {
       await program.methods
-        .verifyQuestion(2, new anchor.BN(0))
+        .verifyQuestion(new anchor.BN(0))
         .accounts({
           config: configPda,
           question: questionPda(1),
@@ -340,7 +339,7 @@ describe("duelpic", () => {
 
   it("verifies a question", async () => {
     await program.methods
-      .verifyQuestion(2, new anchor.BN(0))
+      .verifyQuestion(new anchor.BN(0))
       .accounts({
         config: configPda,
         question: questionPda(1),
@@ -355,7 +354,6 @@ describe("duelpic", () => {
       verifiedPoolPda
     );
     assert.strictEqual(record.isVerified, true);
-    assert.strictEqual(record.difficulty, 2);
     assert.deepEqual(
       verifiedPool.ids.map((id) => id.toNumber()),
       [1]

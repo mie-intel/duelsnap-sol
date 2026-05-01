@@ -24,7 +24,6 @@ pub fn submit_question(
     question.contributor = ctx.accounts.contributor.key();
     question.ipfs_hash = ipfs_hash;
     question.is_verified = false;
-    question.difficulty = 0;
     question.times_played = 0;
     question.royalty_earned = 0;
     question.bump = ctx.bumps.question;
@@ -41,11 +40,7 @@ pub fn initialize_verified_pool(ctx: Context<InitializeVerifiedPool>, page: u64)
     Ok(())
 }
 
-pub fn verify_question(ctx: Context<VerifyQuestion>, difficulty: u8, page: u64) -> Result<()> {
-    require!(
-        (1..=3).contains(&difficulty),
-        DuelpicError::InvalidDifficulty
-    );
+pub fn verify_question(ctx: Context<VerifyQuestion>, page: u64) -> Result<()> {
     require!(
         !ctx.accounts.question.is_verified,
         DuelpicError::AlreadyVerified
@@ -59,7 +54,6 @@ pub fn verify_question(ctx: Context<VerifyQuestion>, difficulty: u8, page: u64) 
 
     let question = &mut ctx.accounts.question;
     question.is_verified = true;
-    question.difficulty = difficulty;
     ctx.accounts.verified_pool.ids.push(question.id);
     Ok(())
 }
@@ -101,7 +95,7 @@ pub struct InitializeVerifiedPool<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(difficulty: u8, page: u64)]
+#[instruction(page: u64)]
 pub struct VerifyQuestion<'info> {
     #[account(seeds = [b"config"], bump = config.bump, has_one = verifier @ DuelpicError::UnauthorizedVerifier)]
     pub config: Account<'info, Config>,
