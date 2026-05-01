@@ -18,29 +18,31 @@ describe("duelpic", () => {
 
   const verifier = anchor.web3.Keypair.generate();
   const relayer = anchor.web3.Keypair.generate();
+  const player2 = anchor.web3.Keypair.generate();
   const treasury = anchor.web3.Keypair.generate().publicKey;
   let paymentMint: anchor.web3.PublicKey;
   let playerToken: anchor.web3.PublicKey;
+  let player2Token: anchor.web3.PublicKey;
   let treasuryToken: anchor.web3.PublicKey;
   let royaltyVault: anchor.web3.PublicKey;
 
   const [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
-    program.programId,
+    program.programId
   );
   const [royaltyVaultAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("royalty_vault_authority")],
-    program.programId,
+    program.programId
   );
   const [verifiedPoolPda] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("verified_pool"), u64Buffer(0)],
-    program.programId,
+    program.programId
   );
 
   function questionPda(id: number) {
     return anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("question"), u64Buffer(id)],
-      program.programId,
+      program.programId
     )[0];
   }
 
@@ -49,14 +51,28 @@ describe("duelpic", () => {
     dayBuffer.writeBigInt64LE(dayId);
     return anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("daily"), player.toBuffer(), dayBuffer],
-      program.programId,
+      program.programId
     )[0];
   }
 
   function royaltyPda(contributor: anchor.web3.PublicKey) {
     return anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("royalty"), contributor.toBuffer()],
-      program.programId,
+      program.programId
+    )[0];
+  }
+
+  function sessionPda(sessionId: Buffer) {
+    return anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("session"), sessionId],
+      program.programId
+    )[0];
+  }
+
+  function sessionVaultAuthority(session: anchor.web3.PublicKey) {
+    return anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("session_vault_authority"), session.toBuffer()],
+      program.programId
     )[0];
   }
 
@@ -69,7 +85,7 @@ describe("duelpic", () => {
   async function fund(pubkey: anchor.web3.PublicKey) {
     const signature = await provider.connection.requestAirdrop(
       pubkey,
-      1_000_000_000,
+      1_000_000_000
     );
     const latest = await provider.connection.getLatestBlockhash();
     await provider.connection.confirmTransaction(
@@ -78,26 +94,36 @@ describe("duelpic", () => {
         blockhash: latest.blockhash,
         lastValidBlockHeight: latest.lastValidBlockHeight,
       },
-      "confirmed",
+      "confirmed"
     );
   }
 
   it("initializes config", async () => {
-    const payer = (provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair })
-      .payer;
+    const payer = (
+      provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair }
+    ).payer;
+    await fund(player2.publicKey);
     paymentMint = await createMint(
       provider.connection,
       payer,
       payer.publicKey,
       null,
-      6,
+      6
     );
     playerToken = (
       await getOrCreateAssociatedTokenAccount(
         provider.connection,
         payer,
         paymentMint,
-        provider.wallet.publicKey,
+        provider.wallet.publicKey
+      )
+    ).address;
+    player2Token = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        paymentMint,
+        player2.publicKey
       )
     ).address;
     treasuryToken = (
@@ -105,7 +131,7 @@ describe("duelpic", () => {
         provider.connection,
         payer,
         paymentMint,
-        treasury,
+        treasury
       )
     ).address;
     royaltyVault = (
@@ -114,7 +140,7 @@ describe("duelpic", () => {
         payer,
         paymentMint,
         royaltyVaultAuthority,
-        true,
+        true
       )
     ).address;
     await mintTo(
@@ -123,7 +149,15 @@ describe("duelpic", () => {
       paymentMint,
       playerToken,
       payer,
-      3_000_000,
+      3_000_000
+    );
+    await mintTo(
+      provider.connection,
+      payer,
+      paymentMint,
+      player2Token,
+      payer,
+      3_000_000
     );
 
     await program.methods
@@ -187,7 +221,9 @@ describe("duelpic", () => {
       .signers([verifier])
       .rpc();
 
-    const verifiedPool = await program.account.verifiedPool.fetch(verifiedPoolPda);
+    const verifiedPool = await program.account.verifiedPool.fetch(
+      verifiedPoolPda
+    );
     assert.strictEqual(verifiedPool.page.toNumber(), 0);
     assert.deepEqual(verifiedPool.ids, []);
   });
@@ -223,12 +259,14 @@ describe("duelpic", () => {
       .rpc();
 
     const record = await program.account.question.fetch(questionPda(1));
-    const verifiedPool = await program.account.verifiedPool.fetch(verifiedPoolPda);
+    const verifiedPool = await program.account.verifiedPool.fetch(
+      verifiedPoolPda
+    );
     assert.strictEqual(record.isVerified, true);
     assert.strictEqual(record.difficulty, 2);
     assert.deepEqual(
       verifiedPool.ids.map((id) => id.toNumber()),
-      [1],
+      [1]
     );
   });
 
@@ -321,7 +359,10 @@ describe("duelpic", () => {
       .rpc();
 
     const playerAccount = await getAccount(provider.connection, playerToken);
-    const treasuryAccount = await getAccount(provider.connection, treasuryToken);
+    const treasuryAccount = await getAccount(
+      provider.connection,
+      treasuryToken
+    );
     const vaultAccount = await getAccount(provider.connection, royaltyVault);
     const question = await program.account.question.fetch(questionPda(1));
     const royaltyRecord = await program.account.royalty.fetch(royalty);
@@ -358,5 +399,267 @@ describe("duelpic", () => {
     assert.strictEqual(Number(playerAccount.amount), 2_997_000);
     assert.strictEqual(Number(vaultAccount.amount), 0);
     assert.strictEqual(royaltyRecord.pendingAmount.toNumber(), 0);
+  });
+
+  it("creates and joins a pvp session", async () => {
+    const sessionId = Buffer.alloc(32, 7);
+    const session = sessionPda(sessionId);
+    const vaultAuthority = sessionVaultAuthority(session);
+    const payer = (
+      provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair }
+    ).payer;
+    const sessionVault = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        paymentMint,
+        vaultAuthority,
+        true
+      )
+    ).address;
+
+    await program.methods
+      .createSession([...sessionId], new anchor.BN(300_000), [new anchor.BN(1)])
+      .accounts({
+        config: configPda,
+        session,
+        player1: provider.wallet.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    let record = await program.account.session.fetch(session);
+    let vault = await getAccount(provider.connection, sessionVault);
+    assert.ok(record.player1.equals(provider.wallet.publicKey));
+    assert.strictEqual(record.wager.toNumber(), 300_000);
+    assert.strictEqual(record.questionCount, 1);
+    assert.strictEqual(record.status, 0);
+    assert.strictEqual(Number(vault.amount), 300_000);
+
+    await program.methods
+      .joinSession()
+      .accounts({
+        config: configPda,
+        session,
+        player2: player2.publicKey,
+        paymentMint,
+        player2Token,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([player2])
+      .rpc();
+
+    record = await program.account.session.fetch(session);
+    vault = await getAccount(provider.connection, sessionVault);
+    assert.ok(record.player2.equals(player2.publicKey));
+    assert.strictEqual(record.status, 1);
+    assert.strictEqual(Number(vault.amount), 600_000);
+  });
+
+  it("commits answers and relayer resolves pvp with royalty split", async () => {
+    const sessionId = Buffer.alloc(32, 8);
+    const session = sessionPda(sessionId);
+    const vaultAuthority = sessionVaultAuthority(session);
+    const payer = (
+      provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair }
+    ).payer;
+    const sessionVault = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        paymentMint,
+        vaultAuthority,
+        true
+      )
+    ).address;
+    const royalty = royaltyPda(provider.wallet.publicKey);
+
+    await program.methods
+      .createSession([...sessionId], new anchor.BN(300_000), [new anchor.BN(1)])
+      .accounts({
+        config: configPda,
+        session,
+        player1: provider.wallet.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    await program.methods
+      .joinSession()
+      .accounts({
+        config: configPda,
+        session,
+        player2: player2.publicKey,
+        paymentMint,
+        player2Token,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([player2])
+      .rpc();
+
+    await program.methods
+      .commitAnswers(Array.from(Buffer.alloc(32, 1)))
+      .accounts({
+        session,
+        player: provider.wallet.publicKey,
+      })
+      .rpc();
+    let sessionRecord = await program.account.session.fetch(session);
+    assert.strictEqual(sessionRecord.status, 2);
+
+    await program.methods
+      .commitAnswers(Array.from(Buffer.alloc(32, 2)))
+      .accounts({
+        session,
+        player: player2.publicKey,
+      })
+      .signers([player2])
+      .rpc();
+    sessionRecord = await program.account.session.fetch(session);
+    assert.strictEqual(sessionRecord.status, 3);
+
+    const p1Before = Number(
+      (await getAccount(provider.connection, playerToken)).amount
+    );
+    const treasuryBefore = Number(
+      (await getAccount(provider.connection, treasuryToken)).amount
+    );
+    const royaltyBefore = (
+      await program.account.royalty.fetch(royalty)
+    ).pendingAmount.toNumber();
+
+    await program.methods
+      .resolveByRelayer(provider.wallet.publicKey, 3, 2)
+      .accounts({
+        config: configPda,
+        session,
+        relayer: relayer.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        player2Token,
+        treasuryToken,
+        royaltyVaultAuthority,
+        royaltyVault,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .remainingAccounts([
+        { pubkey: questionPda(1), isWritable: true, isSigner: false },
+        { pubkey: royalty, isWritable: true, isSigner: false },
+      ])
+      .signers([relayer])
+      .rpc();
+
+    const record = await program.account.session.fetch(session);
+    const p1After = Number(
+      (await getAccount(provider.connection, playerToken)).amount
+    );
+    const treasuryAfter = Number(
+      (await getAccount(provider.connection, treasuryToken)).amount
+    );
+    const vaultAfter = Number(
+      (await getAccount(provider.connection, sessionVault)).amount
+    );
+    const royaltyAfter = (
+      await program.account.royalty.fetch(royalty)
+    ).pendingAmount.toNumber();
+
+    assert.strictEqual(record.status, 4);
+    assert.strictEqual(record.score1, 3);
+    assert.strictEqual(record.score2, 2);
+    assert.strictEqual(p1After - p1Before, 522_000);
+    assert.strictEqual(treasuryAfter - treasuryBefore, 18_000);
+    assert.strictEqual(royaltyAfter - royaltyBefore, 60_000);
+    assert.strictEqual(vaultAfter, 0);
+  });
+
+  it("rejects pvp resolve from non-relayer", async () => {
+    const sessionId = Buffer.alloc(32, 9);
+    const session = sessionPda(sessionId);
+    const vaultAuthority = sessionVaultAuthority(session);
+    const payer = (
+      provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair }
+    ).payer;
+    const sessionVault = (
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        paymentMint,
+        vaultAuthority,
+        true
+      )
+    ).address;
+    const royalty = royaltyPda(provider.wallet.publicKey);
+
+    await program.methods
+      .createSession([...sessionId], new anchor.BN(300_000), [new anchor.BN(1)])
+      .accounts({
+        config: configPda,
+        session,
+        player1: provider.wallet.publicKey,
+        paymentMint,
+        player1Token: playerToken,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    await program.methods
+      .joinSession()
+      .accounts({
+        config: configPda,
+        session,
+        player2: player2.publicKey,
+        paymentMint,
+        player2Token,
+        sessionVaultAuthority: vaultAuthority,
+        sessionVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([player2])
+      .rpc();
+
+    try {
+      await program.methods
+        .resolveByRelayer(provider.wallet.publicKey, 1, 0)
+        .accounts({
+          config: configPda,
+          session,
+          relayer: provider.wallet.publicKey,
+          paymentMint,
+          player1Token: playerToken,
+          player2Token,
+          treasuryToken,
+          royaltyVaultAuthority,
+          royaltyVault,
+          sessionVaultAuthority: vaultAuthority,
+          sessionVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .remainingAccounts([
+          { pubkey: questionPda(1), isWritable: true, isSigner: false },
+          { pubkey: royalty, isWritable: true, isSigner: false },
+        ])
+        .rpc();
+      assert.fail("resolve should fail for non-relayer");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert.include(message, "UnauthorizedRelayer");
+    }
   });
 });
