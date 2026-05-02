@@ -1,93 +1,86 @@
 "use client";
 
-import { PublicKey } from "@solana/web3.js";
-import { useCallback, useEffect, useState } from "react";
+import { usePrivy } from "@privy-io/react-auth";
+import {
+  type ConnectedStandardSolanaWallet,
+  useSignTransaction,
+  useWallets,
+} from "@privy-io/react-auth/solana";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import { useMemo } from "react";
 import type { BrowserSolanaWallet } from "../lib/solana/client";
 
-declare global {
-  interface Window {
-    solana?: BrowserSolanaWallet & {
-      isPhantom?: boolean;
-      isConnected?: boolean;
-      publicKey?: PublicKey;
-    };
-  }
+function getPrivyChain() {
+  const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER;
+  if (cluster === "mainnet-beta") return "solana:mainnet" as const;
+  if (cluster === "testnet") return "solana:testnet" as const;
+  return "solana:devnet" as const;
 }
 
-interface WalletState {
-  address: string | null;
-  publicKey: PublicKey | null;
-  walletClient: BrowserSolanaWallet | null;
-  isConnected: boolean;
-  isReady: boolean;
-  walletClientType: string | null;
-  connectorType: string | null;
+function pickWallet(wallets: ConnectedStandardSolanaWallet[]) {
+  return (
+    wallets.find((wallet) => wallet.standardWallet.name === "Privy") ??
+    wallets[0] ??
+    null
+  );
 }
 
 export function useWallet() {
-  const [state, setState] = useState<WalletState>({
-    address: null,
-    publicKey: null,
-    walletClient: null,
-    isConnected: false,
-    isReady: false,
-    walletClientType: null,
-    connectorType: null,
-  });
+  const {
+    authenticated,
+    login,
+    logout,
+    ready: privyReady,
+  } = usePrivy();
+  const { ready: walletsReady, wallets } = useWallets();
+  const { signTransaction } = useSignTransaction();
+  const selectedWallet = pickWallet(wallets);
 
-  const syncWallet = useCallback(() => {
-    const wallet = window.solana;
-    const publicKey = wallet?.publicKey ?? null;
-    setState({
-      address: publicKey?.toBase58() ?? null,
+  const walletClient = useMemo<BrowserSolanaWallet | null>(() => {
+    if (!selectedWallet) return null;
+
+    const publicKey = new PublicKey(selectedWallet.address);
+
+    return {
       publicKey,
-      walletClient: wallet ?? null,
-      isConnected: Boolean(wallet?.isConnected && publicKey),
-      isReady: true,
-      walletClientType: wallet?.isPhantom ? "phantom" : "solana",
-      connectorType: "wallet-standard",
-    });
-  }, []);
-
-  useEffect(() => {
-    syncWallet();
-    window.addEventListener("focus", syncWallet);
-    return () => window.removeEventListener("focus", syncWallet);
-  }, [syncWallet]);
-
-  const login = useCallback(async () => {
-    if (!window.solana) {
-      window.open("https://phantom.app/", "_blank", "noopener,noreferrer");
-      return;
-    }
-    const result = await window.solana.connect?.();
-    const publicKey = result?.publicKey ?? window.solana.publicKey ?? null;
-    setState({
-      address: publicKey?.toBase58() ?? null,
-      publicKey,
-      walletClient: window.solana,
-      isConnected: Boolean(publicKey),
-      isReady: true,
-      walletClientType: window.solana.isPhantom ? "phantom" : "solana",
-      connectorType: "wallet-standard",
-    });
-  }, []);
-
-  const logout = useCallback(async () => {
-    await window.solana?.disconnect?.();
-    setState({
-      address: null,
-      publicKey: null,
-      walletClient: window.solana ?? null,
-      isConnected: false,
-      isReady: true,
-      walletClientType: null,
-      connectorType: null,
-    });
-  }, []);
+      signTransaction: async (transaction: Transaction) => {
+        const { signedTransaction } = await signTransaction({
+          chain: getPrivyChain(),
+          transaction: transaction.serialize({
+            requireAllSignatures: false,
+            verifySignatures: false,
+          }),
+          wallet: selectedWallet,
+        });
+        return Transaction.from(signedTransaction);
+      },
+      signAllTransactions: async (transactions: Transaction[]) =>
+        Promise.all(
+          transactions.map(async (transaction) => {
+            const { signedTransaction } = await signTransaction({
+              chain: getPrivyChain(),
+              transaction: transaction.serialize({
+                requireAllSignatures: false,
+                verifySignatures: false,
+              }),
+              wallet: selectedWallet,
+            });
+            return Transaction.from(signedTransaction);
+          }),
+        ),
+      connect: async () => ({ publicKey }),
+      disconnect: async () => logout(),
+    };
+  }, [logout, selectedWallet, signTransaction]);
 
   return {
-    ...state,
+    address: selectedWallet?.address ?? null,
+    publicKey: walletClient?.publicKey ?? null,
+    walletClient,
+    isConnected: Boolean(authenticated && selectedWallet),
+    isReady: privyReady && walletsReady,
+    walletClientType: selectedWallet?.standardWallet.name ?? null,
+    connectorType: selectedWallet ? "privy-solana" : null,
     isMiniPay: false,
     login,
     logout,
