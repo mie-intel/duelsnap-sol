@@ -1,0 +1,5 @@
+# AGENTS.md
+
+<INSTRUCTIONS>
+@.agents/RTK.md
+</INSTRUCTIONS>
