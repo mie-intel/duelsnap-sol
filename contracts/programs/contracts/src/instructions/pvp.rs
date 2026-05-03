@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::{
-    Config, DuelpicError, Question, Royalty, Session, BPS_DENOMINATOR, CONTRIBUTOR_BPS,
+    Config, DuelSnapError, Question, Royalty, Session, BPS_DENOMINATOR, CONTRIBUTOR_BPS,
     MAX_SESSION_QUESTIONS, PLAY_WINDOW_SECONDS, REVEAL_WINDOW_SECONDS, STATUS_COMMITTING,
     STATUS_DONE, STATUS_PLAYING, STATUS_REVEALING, STATUS_WAITING, WINNER_BPS,
 };
@@ -13,10 +13,10 @@ pub fn create_session(
     wager: u64,
     question_ids: Vec<u64>,
 ) -> Result<()> {
-    require!(wager > 0, DuelpicError::InvalidWager);
+    require!(wager > 0, DuelSnapError::InvalidWager);
     require!(
         !question_ids.is_empty() && question_ids.len() <= MAX_SESSION_QUESTIONS,
-        DuelpicError::InvalidQuestionIds
+        DuelSnapError::InvalidQuestionIds
     );
 
     token::transfer(ctx.accounts.transfer_wager_to_session_vault(), wager)?;
@@ -40,7 +40,7 @@ pub fn create_session(
     session.play_deadline = clock
         .unix_timestamp
         .checked_add(PLAY_WINDOW_SECONDS)
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     session.reveal_deadline = 0;
     session.bump = ctx.bumps.session;
     Ok(())
@@ -49,19 +49,19 @@ pub fn create_session(
 pub fn join_session(ctx: Context<JoinSession>) -> Result<()> {
     require!(
         ctx.accounts.session.status == STATUS_WAITING,
-        DuelpicError::WrongStatus
+        DuelSnapError::WrongStatus
     );
     require!(
         ctx.accounts.session.player2 == Pubkey::default(),
-        DuelpicError::SessionFull
+        DuelSnapError::SessionFull
     );
     require!(
         ctx.accounts.player2.key() != ctx.accounts.session.player1,
-        DuelpicError::InvalidPlayer
+        DuelSnapError::InvalidPlayer
     );
     require!(
         Clock::get()?.unix_timestamp <= ctx.accounts.session.play_deadline,
-        DuelpicError::DeadlineExceeded
+        DuelSnapError::DeadlineExceeded
     );
 
     token::transfer(
@@ -79,11 +79,11 @@ pub fn commit_answers(ctx: Context<CommitAnswers>, commit_hash: [u8; 32]) -> Res
     require!(
         ctx.accounts.session.status == STATUS_PLAYING
             || ctx.accounts.session.status == STATUS_COMMITTING,
-        DuelpicError::WrongStatus
+        DuelSnapError::WrongStatus
     );
     require!(
         Clock::get()?.unix_timestamp <= ctx.accounts.session.play_deadline,
-        DuelpicError::DeadlineExceeded
+        DuelSnapError::DeadlineExceeded
     );
 
     let player = ctx.accounts.player.key();
@@ -91,17 +91,17 @@ pub fn commit_answers(ctx: Context<CommitAnswers>, commit_hash: [u8; 32]) -> Res
     if player == session.player1 {
         require!(
             session.commit_hash1 == [0; 32],
-            DuelpicError::AlreadyCommitted
+            DuelSnapError::AlreadyCommitted
         );
         session.commit_hash1 = commit_hash;
     } else if player == session.player2 {
         require!(
             session.commit_hash2 == [0; 32],
-            DuelpicError::AlreadyCommitted
+            DuelSnapError::AlreadyCommitted
         );
         session.commit_hash2 = commit_hash;
     } else {
-        return err!(DuelpicError::InvalidPlayer);
+        return err!(DuelSnapError::InvalidPlayer);
     }
 
     if session.commit_hash1 != [0; 32] && session.commit_hash2 != [0; 32] {
@@ -109,7 +109,7 @@ pub fn commit_answers(ctx: Context<CommitAnswers>, commit_hash: [u8; 32]) -> Res
         session.reveal_deadline = Clock::get()?
             .unix_timestamp
             .checked_add(REVEAL_WINDOW_SECONDS)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
     } else {
         session.status = STATUS_COMMITTING;
     }
@@ -124,17 +124,17 @@ pub fn resolve_by_relayer<'info>(
 ) -> Result<()> {
     require!(
         ctx.accounts.session.status != STATUS_DONE,
-        DuelpicError::WrongStatus
+        DuelSnapError::WrongStatus
     );
     require!(
         ctx.accounts.session.player2 != Pubkey::default(),
-        DuelpicError::SessionFull
+        DuelSnapError::SessionFull
     );
     require!(
         winner == Pubkey::default()
             || winner == ctx.accounts.session.player1
             || winner == ctx.accounts.session.player2,
-        DuelpicError::InvalidPlayer
+        DuelSnapError::InvalidPlayer
     );
 
     ctx.accounts.session.score1 = score1;
@@ -145,21 +145,21 @@ pub fn resolve_by_relayer<'info>(
 pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
     require!(
         ctx.accounts.session.status != STATUS_DONE,
-        DuelpicError::WrongStatus
+        DuelSnapError::WrongStatus
     );
 
     let now = Clock::get()?.unix_timestamp;
     let caller = ctx.accounts.claimant.key();
     let is_p1 = caller == ctx.accounts.session.player1;
     let is_p2 = caller == ctx.accounts.session.player2;
-    require!(is_p1 || is_p2, DuelpicError::InvalidPlayer);
+    require!(is_p1 || is_p2, DuelSnapError::InvalidPlayer);
 
     if ctx.accounts.session.status == STATUS_WAITING {
         require!(
             now > ctx.accounts.session.play_deadline,
-            DuelpicError::DeadlineNotReached
+            DuelSnapError::DeadlineNotReached
         );
-        require!(is_p1, DuelpicError::InvalidPlayer);
+        require!(is_p1, DuelSnapError::InvalidPlayer);
         ctx.accounts.session.status = STATUS_DONE;
         let session_key = ctx.accounts.session.key();
         let bump = [ctx.bumps.session_vault_authority];
@@ -183,7 +183,7 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
         } else {
             ctx.accounts.session.play_deadline
         };
-        require!(now > deadline, DuelpicError::DeadlineNotReached);
+        require!(now > deadline, DuelSnapError::DeadlineNotReached);
 
         let caller_progressed = if ctx.accounts.session.status == STATUS_REVEALING {
             false
@@ -192,7 +192,7 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
         } else {
             ctx.accounts.session.commit_hash2 != [0; 32]
         };
-        require!(caller_progressed, DuelpicError::InvalidPlayer);
+        require!(caller_progressed, DuelSnapError::InvalidPlayer);
 
         ctx.accounts.session.status = STATUS_DONE;
         let pool = ctx
@@ -200,14 +200,14 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
             .session
             .wager
             .checked_mul(2)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         let claimant_payout = pool
             .checked_mul(WINNER_BPS)
             .and_then(|amount| amount.checked_div(BPS_DENOMINATOR))
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         let treasury_payout = pool
             .checked_sub(claimant_payout)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         let session_key = ctx.accounts.session.key();
         let bump = [ctx.bumps.session_vault_authority];
         let signer_seeds: &[&[&[u8]]] =
@@ -227,7 +227,7 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
         return Ok(());
     }
 
-    err!(DuelpicError::WrongStatus)
+    err!(DuelSnapError::WrongStatus)
 }
 
 fn finalize_session<'info>(
@@ -236,7 +236,7 @@ fn finalize_session<'info>(
 ) -> Result<()> {
     require!(
         ctx.remaining_accounts.len() == ctx.accounts.session.question_count as usize * 2,
-        DuelpicError::InvalidRemainingAccounts
+        DuelSnapError::InvalidRemainingAccounts
     );
 
     let pool = ctx
@@ -244,22 +244,22 @@ fn finalize_session<'info>(
         .session
         .wager
         .checked_mul(2)
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     let winner_payout = pool
         .checked_mul(WINNER_BPS)
         .and_then(|amount| amount.checked_div(BPS_DENOMINATOR))
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     let contributor_share = pool
         .checked_mul(CONTRIBUTOR_BPS)
         .and_then(|amount| amount.checked_div(BPS_DENOMINATOR))
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     let mut treasury_share = pool
         .checked_sub(winner_payout)
         .and_then(|amount| amount.checked_sub(contributor_share))
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     let per_question = contributor_share
         .checked_div(ctx.accounts.session.question_count as u64)
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
     let mut distributed = 0u64;
 
     ctx.accounts.session.status = STATUS_DONE;
@@ -283,19 +283,19 @@ fn finalize_session<'info>(
         let royalty_info = &ctx.remaining_accounts[index * 2 + 1];
         require!(
             question_info.is_writable,
-            DuelpicError::InvalidQuestionAccount
+            DuelSnapError::InvalidQuestionAccount
         );
         require!(
             royalty_info.is_writable,
-            DuelpicError::InvalidRoyaltyAccount
+            DuelSnapError::InvalidRoyaltyAccount
         );
 
         let mut question: Account<Question> = Account::try_from(question_info)?;
         require!(
             question.id == question_id,
-            DuelpicError::InvalidQuestionAccount
+            DuelSnapError::InvalidQuestionAccount
         );
-        require!(question.is_verified, DuelpicError::NotVerified);
+        require!(question.is_verified, DuelSnapError::NotVerified);
 
         let (expected_royalty, _) = Pubkey::find_program_address(
             &[b"royalty", question.contributor.as_ref()],
@@ -303,25 +303,25 @@ fn finalize_session<'info>(
         );
         require!(
             royalty_info.key() == expected_royalty,
-            DuelpicError::InvalidRoyaltyAccount
+            DuelSnapError::InvalidRoyaltyAccount
         );
         let mut royalty: Account<Royalty> = Account::try_from(royalty_info)?;
 
         question.times_played = question
             .times_played
             .checked_add(1)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         question.royalty_earned = question
             .royalty_earned
             .checked_add(per_question)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         royalty.pending_amount = royalty
             .pending_amount
             .checked_add(per_question)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         distributed = distributed
             .checked_add(per_question)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
 
         question.exit(ctx.program_id)?;
         royalty.exit(ctx.program_id)?;
@@ -331,9 +331,9 @@ fn finalize_session<'info>(
         .checked_add(
             contributor_share
                 .checked_sub(distributed)
-                .ok_or(DuelpicError::MathOverflow)?,
+                .ok_or(DuelSnapError::MathOverflow)?,
         )
-        .ok_or(DuelpicError::MathOverflow)?;
+        .ok_or(DuelSnapError::MathOverflow)?;
 
     token::transfer(
         ctx.accounts
@@ -359,7 +359,7 @@ fn finalize_session<'info>(
     } else {
         let refund_each = winner_payout
             .checked_div(2)
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         token::transfer(
             ctx.accounts
                 .transfer_session_to_player1()
@@ -376,9 +376,9 @@ fn finalize_session<'info>(
             .checked_sub(
                 refund_each
                     .checked_mul(2)
-                    .ok_or(DuelpicError::MathOverflow)?,
+                    .ok_or(DuelSnapError::MathOverflow)?,
             )
-            .ok_or(DuelpicError::MathOverflow)?;
+            .ok_or(DuelSnapError::MathOverflow)?;
         if tie_dust > 0 {
             token::transfer(
                 ctx.accounts
@@ -411,8 +411,8 @@ pub struct CreateSession<'info> {
     pub payment_mint: Account<'info, Mint>,
     #[account(
         mut,
-        constraint = player1_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = player1_token.owner == player1.key() @ DuelpicError::InvalidTokenAccount
+        constraint = player1_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = player1_token.owner == player1.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub player1_token: Account<'info, TokenAccount>,
     /// CHECK: PDA authority only.
@@ -420,8 +420,8 @@ pub struct CreateSession<'info> {
     pub session_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = session_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = session_vault.owner == session_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = session_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = session_vault.owner == session_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub session_vault: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
@@ -453,8 +453,8 @@ pub struct JoinSession<'info> {
     pub payment_mint: Account<'info, Mint>,
     #[account(
         mut,
-        constraint = player2_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = player2_token.owner == player2.key() @ DuelpicError::InvalidTokenAccount
+        constraint = player2_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = player2_token.owner == player2.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub player2_token: Account<'info, TokenAccount>,
     /// CHECK: PDA authority only.
@@ -462,8 +462,8 @@ pub struct JoinSession<'info> {
     pub session_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = session_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = session_vault.owner == session_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = session_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = session_vault.owner == session_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub session_vault: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
@@ -491,7 +491,7 @@ pub struct CommitAnswers<'info> {
 
 #[derive(Accounts)]
 pub struct ResolveByRelayer<'info> {
-    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelpicError::UnauthorizedRelayer)]
+    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelSnapError::UnauthorizedRelayer)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [b"session", &session.id], bump = session.bump)]
     pub session: Box<Account<'info, Session>>,
@@ -500,20 +500,20 @@ pub struct ResolveByRelayer<'info> {
     pub payment_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
-        constraint = player1_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = player1_token.owner == session.player1 @ DuelpicError::InvalidTokenAccount
+        constraint = player1_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = player1_token.owner == session.player1 @ DuelSnapError::InvalidTokenAccount
     )]
     pub player1_token: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = player2_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = player2_token.owner == session.player2 @ DuelpicError::InvalidTokenAccount
+        constraint = player2_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = player2_token.owner == session.player2 @ DuelSnapError::InvalidTokenAccount
     )]
     pub player2_token: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = treasury_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = treasury_token.owner == config.treasury @ DuelpicError::InvalidTokenAccount
+        constraint = treasury_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = treasury_token.owner == config.treasury @ DuelSnapError::InvalidTokenAccount
     )]
     pub treasury_token: Box<Account<'info, TokenAccount>>,
     /// CHECK: PDA authority only.
@@ -521,8 +521,8 @@ pub struct ResolveByRelayer<'info> {
     pub royalty_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = royalty_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = royalty_vault.owner == royalty_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = royalty_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = royalty_vault.owner == royalty_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub royalty_vault: Box<Account<'info, TokenAccount>>,
     /// CHECK: PDA authority only.
@@ -530,8 +530,8 @@ pub struct ResolveByRelayer<'info> {
     pub session_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = session_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = session_vault.owner == session_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = session_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = session_vault.owner == session_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub session_vault: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
@@ -597,20 +597,20 @@ pub struct ClaimTimeout<'info> {
     pub session_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = session_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = session_vault.owner == session_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = session_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = session_vault.owner == session_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub session_vault: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = claimant_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = claimant_token.owner == claimant.key() @ DuelpicError::InvalidTokenAccount
+        constraint = claimant_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = claimant_token.owner == claimant.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub claimant_token: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = treasury_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = treasury_token.owner == config.treasury @ DuelpicError::InvalidTokenAccount
+        constraint = treasury_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = treasury_token.owner == config.treasury @ DuelSnapError::InvalidTokenAccount
     )]
     pub treasury_token: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,

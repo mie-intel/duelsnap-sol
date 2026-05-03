@@ -1,14 +1,14 @@
 use anchor_lang::prelude::*;
 
-use crate::{Config, DuelpicError};
+use crate::{Config, DuelSnapError};
 
 pub fn initialize_config(
     ctx: Context<InitializeConfig>,
     daily_free_limit: u8,
     casual_fee_amount: u64,
 ) -> Result<()> {
-    require!(daily_free_limit > 0, DuelpicError::InvalidDailyFreeLimit);
-    require!(casual_fee_amount > 0, DuelpicError::InvalidFeeAmount);
+    require!(daily_free_limit > 0, DuelSnapError::InvalidDailyFreeLimit);
+    require!(casual_fee_amount > 0, DuelSnapError::InvalidFeeAmount);
 
     let config = &mut ctx.accounts.config;
     config.admin = ctx.accounts.admin.key();

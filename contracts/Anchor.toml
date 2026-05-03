@@ -6,7 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-duelpic = "71PBFBGXGnYJekctFqKYAhBMgYXHpoLwhxg8CxG2pm6b"
+duelsnap = "3o6vAECHh7CDLvbFn6DzTMMDFqbSmEbC9JLb4TAQn2Za"
+
+[programs.devnet]
+duelsnap = "3o6vAECHh7CDLvbFn6DzTMMDFqbSmEbC9JLb4TAQn2Za"
 
 [registry]
 url = "https://api.apr.dev"

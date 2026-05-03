@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{Config, DailyPlay, DuelpicError};
+use crate::{Config, DailyPlay, DuelSnapError};
 
 pub fn initialize_daily_play(ctx: Context<InitializeDailyPlay>, day_id: i64) -> Result<()> {
     let daily_play = &mut ctx.accounts.daily_play;
@@ -14,7 +14,7 @@ pub fn initialize_daily_play(ctx: Context<InitializeDailyPlay>, day_id: i64) -> 
 pub fn increment_daily_count(ctx: Context<IncrementDailyCount>) -> Result<()> {
     require!(
         ctx.accounts.daily_play.count < ctx.accounts.config.daily_free_limit,
-        DuelpicError::DailyLimitExceeded
+        DuelSnapError::DailyLimitExceeded
     );
 
     ctx.accounts.daily_play.count += 1;
@@ -24,7 +24,7 @@ pub fn increment_daily_count(ctx: Context<IncrementDailyCount>) -> Result<()> {
 #[derive(Accounts)]
 #[instruction(day_id: i64)]
 pub struct InitializeDailyPlay<'info> {
-    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelpicError::UnauthorizedRelayer)]
+    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelSnapError::UnauthorizedRelayer)]
     pub config: Account<'info, Config>,
     #[account(
         init,
@@ -43,7 +43,7 @@ pub struct InitializeDailyPlay<'info> {
 
 #[derive(Accounts)]
 pub struct IncrementDailyCount<'info> {
-    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelpicError::UnauthorizedRelayer)]
+    #[account(seeds = [b"config"], bump = config.bump, has_one = relayer @ DuelSnapError::UnauthorizedRelayer)]
     pub config: Account<'info, Config>,
     #[account(mut, seeds = [b"daily", daily_play.player.as_ref(), &daily_play.day_id.to_le_bytes()], bump = daily_play.bump)]
     pub daily_play: Account<'info, DailyPlay>,

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum DuelpicError {
+pub enum DuelSnapError {
     #[msg("Daily free limit must be greater than zero")]
     InvalidDailyFreeLimit,
     #[msg("Fee amount must be greater than zero")]

@@ -8,13 +8,13 @@ import {
   mintTo,
 } from "@solana/spl-token";
 import { assert } from "chai";
-import { Duelpic } from "../target/types/duelpic";
+import { DuelSnap } from "../target/types/duelsnap";
 
-describe("duelpic", () => {
+describe("duelsnap", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const provider = anchor.getProvider() as anchor.AnchorProvider;
-  const program = anchor.workspace.duelpic as Program<Duelpic>;
+  const program = anchor.workspace.duelsnap as Program<DuelSnap>;
 
   const verifier = anchor.web3.Keypair.generate();
   const relayer = anchor.web3.Keypair.generate();
@@ -280,7 +280,7 @@ describe("duelpic", () => {
     const question = questionPda(1);
 
     await program.methods
-      .submitQuestion(new anchor.BN(1), "QmDuelPicMockHash")
+      .submitQuestion(new anchor.BN(1), "QmDuelSnapMockHash")
       .accounts({
         config: configPda,
         question,
@@ -294,7 +294,7 @@ describe("duelpic", () => {
     assert.strictEqual(config.questionCount.toNumber(), 1);
     assert.strictEqual(record.id.toNumber(), 1);
     assert.ok(record.contributor.equals(provider.wallet.publicKey));
-    assert.strictEqual(record.ipfsHash, "QmDuelPicMockHash");
+    assert.strictEqual(record.ipfsHash, "QmDuelSnapMockHash");
     assert.strictEqual(record.isVerified, false);
   });
 

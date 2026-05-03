@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::{Config, DuelpicError, Royalty};
+use crate::{Config, DuelSnapError, Royalty};
 
 pub fn initialize_royalty(ctx: Context<InitializeRoyalty>) -> Result<()> {
     let royalty = &mut ctx.accounts.royalty;
@@ -13,7 +13,7 @@ pub fn initialize_royalty(ctx: Context<InitializeRoyalty>) -> Result<()> {
 
 pub fn withdraw_royalty(ctx: Context<WithdrawRoyalty>) -> Result<()> {
     let amount = ctx.accounts.royalty.pending_amount;
-    require!(amount > 0, DuelpicError::NothingToWithdraw);
+    require!(amount > 0, DuelSnapError::NothingToWithdraw);
 
     ctx.accounts.royalty.pending_amount = 0;
 
@@ -62,14 +62,14 @@ pub struct WithdrawRoyalty<'info> {
     pub royalty_vault_authority: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = royalty_vault.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = royalty_vault.owner == royalty_vault_authority.key() @ DuelpicError::InvalidTokenAccount
+        constraint = royalty_vault.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = royalty_vault.owner == royalty_vault_authority.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub royalty_vault: Account<'info, TokenAccount>,
     #[account(
         mut,
-        constraint = contributor_token.mint == payment_mint.key() @ DuelpicError::InvalidTokenAccount,
-        constraint = contributor_token.owner == contributor.key() @ DuelpicError::InvalidTokenAccount
+        constraint = contributor_token.mint == payment_mint.key() @ DuelSnapError::InvalidTokenAccount,
+        constraint = contributor_token.owner == contributor.key() @ DuelSnapError::InvalidTokenAccount
     )]
     pub contributor_token: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,

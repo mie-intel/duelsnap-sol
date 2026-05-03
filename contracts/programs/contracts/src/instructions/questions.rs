@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     constants::{MAX_IPFS_HASH_LEN, MAX_VERIFIED_IDS_PER_PAGE},
-    Config, DuelpicError, Question, VerifiedPool,
+    Config, DuelSnapError, Question, VerifiedPool,
 };
 
 pub fn submit_question(
@@ -12,11 +12,11 @@ pub fn submit_question(
 ) -> Result<()> {
     require!(
         question_id == ctx.accounts.config.question_count + 1,
-        DuelpicError::InvalidQuestionId
+        DuelSnapError::InvalidQuestionId
     );
     require!(
         ipfs_hash.as_bytes().len() <= MAX_IPFS_HASH_LEN,
-        DuelpicError::IpfsHashTooLong
+        DuelSnapError::IpfsHashTooLong
     );
 
     let question = &mut ctx.accounts.question;
@@ -43,13 +43,13 @@ pub fn initialize_verified_pool(ctx: Context<InitializeVerifiedPool>, page: u64)
 pub fn verify_question(ctx: Context<VerifyQuestion>, page: u64) -> Result<()> {
     require!(
         !ctx.accounts.question.is_verified,
-        DuelpicError::AlreadyVerified
+        DuelSnapError::AlreadyVerified
     );
     let expected_page = (ctx.accounts.question.id - 1) / MAX_VERIFIED_IDS_PER_PAGE as u64;
-    require!(page == expected_page, DuelpicError::InvalidVerifiedPoolPage);
+    require!(page == expected_page, DuelSnapError::InvalidVerifiedPoolPage);
     require!(
         ctx.accounts.verified_pool.ids.len() < MAX_VERIFIED_IDS_PER_PAGE,
-        DuelpicError::VerifiedPoolFull
+        DuelSnapError::VerifiedPoolFull
     );
 
     let question = &mut ctx.accounts.question;
@@ -79,7 +79,7 @@ pub struct SubmitQuestion<'info> {
 #[derive(Accounts)]
 #[instruction(page: u64)]
 pub struct InitializeVerifiedPool<'info> {
-    #[account(seeds = [b"config"], bump = config.bump, has_one = verifier @ DuelpicError::UnauthorizedVerifier)]
+    #[account(seeds = [b"config"], bump = config.bump, has_one = verifier @ DuelSnapError::UnauthorizedVerifier)]
     pub config: Account<'info, Config>,
     #[account(
         init,
@@ -97,7 +97,7 @@ pub struct InitializeVerifiedPool<'info> {
 #[derive(Accounts)]
 #[instruction(page: u64)]
 pub struct VerifyQuestion<'info> {
-    #[account(seeds = [b"config"], bump = config.bump, has_one = verifier @ DuelpicError::UnauthorizedVerifier)]
+    #[account(seeds = [b"config"], bump = config.bump, has_one = verifier @ DuelSnapError::UnauthorizedVerifier)]
     pub config: Account<'info, Config>,
     #[account(mut, seeds = [b"question", &question.id.to_le_bytes()], bump = question.bump)]
     pub question: Account<'info, Question>,

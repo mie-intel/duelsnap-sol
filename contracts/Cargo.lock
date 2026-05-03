@@ -706,7 +706,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "duelpic"
+name = "duelsnap"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

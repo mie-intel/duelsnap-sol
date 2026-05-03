@@ -12,10 +12,10 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("71PBFBGXGnYJekctFqKYAhBMgYXHpoLwhxg8CxG2pm6b");
+declare_id!("3o6vAECHh7CDLvbFn6DzTMMDFqbSmEbC9JLb4TAQn2Za");
 
 #[program]
-pub mod duelpic {
+pub mod duelsnap {
     use super::*;
 
     pub fn initialize_config(
