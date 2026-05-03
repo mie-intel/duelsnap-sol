@@ -4,12 +4,16 @@ export type SolanaCluster = "localnet" | "devnet" | "mainnet-beta";
 
 const DEFAULT_LOCALNET_RPC = "http://127.0.0.1:8899";
 const DEFAULT_DEVNET_RPC = "https://api.devnet.solana.com";
-const DEFAULT_PROGRAM_ID = "71PBFBGXGnYJekctFqKYAhBMgYXHpoLwhxg8CxG2pm6b";
+const DEFAULT_PROGRAM_ID = "3o6vAECHh7CDLvbFn6DzTMMDFqbSmEbC9JLb4TAQn2Za";
 
-function publicKeyFromEnv(name: string, fallback?: string) {
-  const value = process.env[name] ?? fallback;
-  if (!value) throw new Error(`${name} is not configured`);
-  return new PublicKey(value);
+function publicKeyFromValue(
+  name: string,
+  value: string | undefined,
+  fallback?: string,
+) {
+  const resolved = value ?? fallback;
+  if (!resolved) throw new Error(`${name} is not configured`);
+  return new PublicKey(resolved);
 }
 
 export function getSolanaCluster(): SolanaCluster {
@@ -33,16 +37,26 @@ export function getSolanaRpcUrl() {
   );
 }
 
-export function getDuelpicProgramId() {
-  return publicKeyFromEnv("NEXT_PUBLIC_DUELPIC_PROGRAM_ID", DEFAULT_PROGRAM_ID);
+export function getDuelSnapProgramId() {
+  return publicKeyFromValue(
+    "NEXT_PUBLIC_DUELSNAP_PROGRAM_ID",
+    process.env.NEXT_PUBLIC_DUELSNAP_PROGRAM_ID,
+    DEFAULT_PROGRAM_ID,
+  );
 }
 
 export function getPaymentMint() {
-  return publicKeyFromEnv("NEXT_PUBLIC_PAYMENT_MINT");
+  return publicKeyFromValue(
+    "NEXT_PUBLIC_PAYMENT_MINT",
+    process.env.NEXT_PUBLIC_PAYMENT_MINT,
+  );
 }
 
 export function getTreasuryAddress() {
-  return publicKeyFromEnv("NEXT_PUBLIC_TREASURY_ADDRESS");
+  return publicKeyFromValue(
+    "NEXT_PUBLIC_TREASURY_ADDRESS",
+    process.env.NEXT_PUBLIC_TREASURY_ADDRESS,
+  );
 }
 
 export const PAYMENT_DECIMALS = Number(

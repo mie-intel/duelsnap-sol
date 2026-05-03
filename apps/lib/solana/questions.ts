@@ -1,6 +1,6 @@
 import { createSolanaConnection } from "./connection";
 import { configPda, questionPda, verifiedPoolPda } from "./pda";
-import { createReadonlyDuelpicProgram } from "./program";
+import { createReadonlyDuelSnapProgram } from "./program";
 
 const MAX_VERIFIED_IDS_PER_PAGE = 256;
 
@@ -19,9 +19,13 @@ export function verifiedPoolPageForQuestion(questionId: number | bigint) {
   return Math.floor((Number(questionId) - 1) / MAX_VERIFIED_IDS_PER_PAGE);
 }
 
+export function verifiedPoolIdsToNumbers(ids: unknown[]) {
+  return ids.map((id) => Number(id)).filter(Number.isFinite);
+}
+
 export async function getRandomVerifiedQuestionIds(count = 10) {
   const connection = createSolanaConnection();
-  const program = createReadonlyDuelpicProgram(connection);
+  const program = createReadonlyDuelSnapProgram(connection);
   const config = await program.account.config.fetch(configPda());
   const questionCount =
     typeof config.questionCount === "number"
@@ -38,7 +42,7 @@ export async function getRandomVerifiedQuestionIds(count = 10) {
         const pool = await program.account.verifiedPool.fetch(
           verifiedPoolPda(page),
         );
-        return pool.ids.map(Number);
+        return verifiedPoolIdsToNumbers(pool.ids);
       } catch {
         return [];
       }
@@ -52,7 +56,7 @@ export async function getRandomVerifiedQuestionIds(count = 10) {
 
 export async function getQuestionContributor(questionId: number | bigint) {
   const connection = createSolanaConnection();
-  const program = createReadonlyDuelpicProgram(connection);
+  const program = createReadonlyDuelSnapProgram(connection);
   const question = await program.account.question.fetch(questionPda(questionId));
   return question.contributor;
 }

@@ -14,7 +14,7 @@ import {
 } from "../../../../lib/solana/pda";
 import { verifiedPoolPageForQuestion } from "../../../../lib/solana/questions";
 import {
-  createServerDuelpicProgram,
+  createServerDuelSnapProgram,
   getVerifierKeypair,
 } from "../../../../lib/solana/server";
 
@@ -27,14 +27,14 @@ const difficultyMap: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
 
 async function getQuestionRecord(questionId: number) {
   const verifier = getVerifierKeypair();
-  const { program } = createServerDuelpicProgram(verifier);
+  const { program } = createServerDuelSnapProgram(verifier);
   return program.account.question.fetch(questionPda(questionId));
 }
 
 async function approveQuestionOnchain(questionId: number, difficulty: number) {
   void difficulty;
   const verifier = getVerifierKeypair();
-  const { program } = createServerDuelpicProgram(verifier);
+  const { program } = createServerDuelSnapProgram(verifier);
   const page = verifiedPoolPageForQuestion(questionId);
   const verifiedPool = verifiedPoolPda(page);
 

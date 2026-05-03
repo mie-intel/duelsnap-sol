@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { redis } from "../../../../lib/redis/client";
 import { parseRedisJson } from "../../../../lib/redis/json";
 import { createSolanaConnection } from "../../../../lib/solana/connection";
-import { createReadonlyDuelpicProgram } from "../../../../lib/solana/program";
+import { createReadonlyDuelSnapProgram } from "../../../../lib/solana/program";
 import { sessionAddressFromId } from "../../../../lib/solana/pvp";
 import { getRandomVerifiedQuestionIds } from "../../../../lib/solana/questions";
 
@@ -50,7 +50,7 @@ async function ensurePendingSessionIsUsable(
 
   try {
     const connection = createSolanaConnection();
-    const program = createReadonlyDuelpicProgram(connection);
+    const program = createReadonlyDuelSnapProgram(connection);
     const session = await program.account.session.fetch(
       sessionAddressFromId(pending.sessionId),
     );

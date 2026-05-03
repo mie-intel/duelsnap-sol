@@ -12,7 +12,7 @@ import type { GameMode } from "../../hooks/usePlayerLog";
 import { usePlayerLog } from "../../hooks/usePlayerLog";
 import { useWallet } from "../../hooks/useWallet";
 import {
-  createBrowserDuelpicProgram,
+  createBrowserDuelSnapProgram,
   createPaymentAtaInstruction,
   sendWalletTransaction,
 } from "../../lib/solana/client";
@@ -104,7 +104,7 @@ export default function PlayerLogPage() {
     setWithdrawError("");
     setWithdrawSuccess("");
     try {
-      const { program } = createBrowserDuelpicProgram(walletClient);
+      const { program } = createBrowserDuelSnapProgram(walletClient);
       const royaltyVaultAuthority = royaltyVaultAuthorityPda();
       const royaltyVault = createPaymentAtaInstruction(
         royaltyVaultAuthority,

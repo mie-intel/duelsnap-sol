@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { BN } from "@coral-xyz/anchor";
 import { SystemProgram } from "@solana/web3.js";
 import { useWallet } from "../../../../hooks/useWallet";
-import { createBrowserDuelpicProgram } from "../../../../lib/solana/client";
+import { createBrowserDuelSnapProgram } from "../../../../lib/solana/client";
 import { configPda, questionPda } from "../../../../lib/solana/pda";
 import Button from "../../../../components/ui/Button";
 import Card from "../../../../components/ui/Card";
@@ -104,7 +104,7 @@ export default function ContributeSubmitPage() {
       console.log("[Upload] Success:", { cid, imageUrl });
 
       setStep("submitting");
-      const { program } = createBrowserDuelpicProgram(walletClient);
+      const { program } = createBrowserDuelSnapProgram(walletClient);
       const config = await program.account.config.fetch(configPda());
       const questionCount =
         typeof config.questionCount === "number"
@@ -195,7 +195,7 @@ export default function ContributeSubmitPage() {
   if (step === "done" && verifyStatus) {
     const approved = verifyStatus.status === "approved";
     return (
-      <div className="flex-1 overflow-y-auto bg-bg-page pb-24">
+      <div className="flex-1 overflow-y-auto pb-24">
         <div className="bg-bg-card px-5 pt-8 pb-6 shadow-sm">
           <div className="max-w-lg mx-auto flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary-light flex items-center justify-center shrink-0">
@@ -348,7 +348,7 @@ export default function ContributeSubmitPage() {
   const canSubmit = !!imageFile && answerValid;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-bg-page pb-24">
+    <div className="flex-1 overflow-y-auto pb-24">
       {/* Header */}
       <div className="bg-bg-card px-5 pt-8 pb-6 shadow-sm">
         <div className="max-w-lg mx-auto flex items-center gap-4">

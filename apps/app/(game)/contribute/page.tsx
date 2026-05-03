@@ -22,7 +22,7 @@ const steps = [
 
 export default function ContributePage() {
   return (
-    <div className="flex-1 overflow-y-auto bg-bg-page pb-24">
+    <div className="flex-1 overflow-y-auto pb-24">
       {/* Header */}
       <div className="bg-bg-card px-5 pt-8 pb-6 shadow-sm">
         <div className="max-w-lg mx-auto flex items-center gap-4">

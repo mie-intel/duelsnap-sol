@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { redis } from "../../../../lib/redis/client";
 import { createSolanaConnection } from "../../../../lib/solana/connection";
 import { questionPda, verifiedPoolPda } from "../../../../lib/solana/pda";
-import { createReadonlyDuelpicProgram } from "../../../../lib/solana/program";
+import { createReadonlyDuelSnapProgram } from "../../../../lib/solana/program";
+import { verifiedPoolIdsToNumbers } from "../../../../lib/solana/questions";
 
 const IPFS_GATEWAY =
   process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? "https://gateway.pinata.cloud";
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const idsParam = searchParams.get("ids");
     const connection = createSolanaConnection();
-    const program = createReadonlyDuelpicProgram(connection);
+    const program = createReadonlyDuelSnapProgram(connection);
 
     let questionIds: number[];
 
@@ -35,7 +36,10 @@ export async function GET(req: Request) {
         searchParams.get("seed") ?? Math.floor(Math.random() * 1e12),
       );
       const pool = await program.account.verifiedPool.fetch(verifiedPoolPda(0));
-      questionIds = shuffle(pool.ids.map(Number), seed).slice(0, count);
+      questionIds = shuffle(verifiedPoolIdsToNumbers(pool.ids), seed).slice(
+        0,
+        count,
+      );
     }
 
     if (questionIds.length === 0) {

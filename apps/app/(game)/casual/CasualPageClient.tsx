@@ -9,7 +9,7 @@ import { useWallet } from "../../../hooks/useWallet";
 import { usePlayerLog } from "../../../hooks/usePlayerLog";
 import { createSolanaConnection } from "../../../lib/solana/connection";
 import {
-  createBrowserDuelpicProgram,
+  createBrowserDuelSnapProgram,
   createPaymentAtaInstruction,
   sendWalletTransaction,
 } from "../../../lib/solana/client";
@@ -24,6 +24,7 @@ import {
 import { paymentAta } from "../../../lib/solana/token";
 import Button from "../../../components/ui/Button";
 import Spinner from "../../../components/ui/Spinner";
+import { CoinIcon, GamepadIcon } from "../../../components/icons";
 import GameEngine, {
   type Question,
   type QuestionResult,
@@ -74,10 +75,10 @@ export default function CasualPageClient() {
     if (!playerPublicKey) return;
     try {
       const connection = createSolanaConnection();
-      const { createReadonlyDuelpicProgram } = await import(
+      const { createReadonlyDuelSnapProgram } = await import(
         "../../../lib/solana/program"
       );
-      const program = createReadonlyDuelpicProgram(connection);
+      const program = createReadonlyDuelSnapProgram(connection);
       const daily = await program.account.dailyPlay.fetch(
         dailyPlayPda(playerPublicKey, currentDayId()),
       );
@@ -131,7 +132,7 @@ export default function CasualPageClient() {
       if (!res.ok || !data.questions?.length)
         throw new Error(data.error ?? "No questions");
 
-      const { connection, program } = createBrowserDuelpicProgram(walletClient);
+      const { connection, program } = createBrowserDuelSnapProgram(walletClient);
       const player = walletClient.publicKey;
       const playerToken = paymentAta(player);
       const tokenBalance = await connection.getTokenAccountBalance(playerToken);
@@ -293,6 +294,7 @@ export default function CasualPageClient() {
       <div className="text-center max-w-xs">
         {isPaid ? (
           <>
+            <CoinIcon className="w-16 h-16 text-accent-paid-dark mx-auto mb-4" />
             <h1 className="font-display font-bold text-3xl text-text-primary mb-2">
               Paid Casual
             </h1>
@@ -305,6 +307,7 @@ export default function CasualPageClient() {
           </>
         ) : (
           <>
+            <GamepadIcon className="w-16 h-16 text-accent-free-dark mx-auto mb-4" />
             <h1 className="font-display font-bold text-3xl text-text-primary mb-2">
               Free Casual
             </h1>

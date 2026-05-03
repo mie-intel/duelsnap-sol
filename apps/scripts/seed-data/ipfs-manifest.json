@@ -1,0 +1,62 @@
+{
+  "CARPET.png": {
+    "answer": "CARPET",
+    "cid": "bafkreihqno4upfjiyj5sti6os6cjtyq7gghd2wkusknctqfhdqc4f7v6cq",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreihqno4upfjiyj5sti6os6cjtyq7gghd2wkusknctqfhdqc4f7v6cq",
+    "questionId": 11
+  },
+  "FIREBALL.png": {
+    "answer": "FIREBALL",
+    "cid": "bafkreihcspvvnaumgb3vzq633ws3rrg53pf5cclej2lerqt2uusqgcv5qu",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreihcspvvnaumgb3vzq633ws3rrg53pf5cclej2lerqt2uusqgcv5qu",
+    "questionId": 12
+  },
+  "GERMAN.png": {
+    "answer": "GERMAN",
+    "cid": "bafkreiejfjr4vj5ij63uhyrklwu2yjdgjqsioonah5f6roml73bcej2gfq",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreiejfjr4vj5ij63uhyrklwu2yjdgjqsioonah5f6roml73bcej2gfq",
+    "questionId": 13
+  },
+  "HOTDOG.png": {
+    "answer": "HOTDOG",
+    "cid": "bafkreidlcpc6xesxbj3a3pu6mvy73b7m4jqblqh2vnf4igu6sfu2ieo45a",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreidlcpc6xesxbj3a3pu6mvy73b7m4jqblqh2vnf4igu6sfu2ieo45a",
+    "questionId": 14
+  },
+  "KARATE.png": {
+    "answer": "KARATE",
+    "cid": "bafkreig5ooy2iliwjf5f7k4xvjmlqmwo2s6xkhn5rkhtdeyeagl556einm",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreig5ooy2iliwjf5f7k4xvjmlqmwo2s6xkhn5rkhtdeyeagl556einm",
+    "questionId": 15
+  },
+  "KNOWLEDGE.png": {
+    "answer": "KNOWLEDGE",
+    "cid": "bafkreidycogdrkvvs3hhtifhfeabhciq6alxv4x5vfu7xalwfkdwgbvw3y",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreidycogdrkvvs3hhtifhfeabhciq6alxv4x5vfu7xalwfkdwgbvw3y",
+    "questionId": 16
+  },
+  "PANCAKE.png": {
+    "answer": "PANCAKE",
+    "cid": "bafkreibypb52vnjl3m4xnchl7uks4n3ockgxdto62kta63e4fdymzz3nna",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreibypb52vnjl3m4xnchl7uks4n3ockgxdto62kta63e4fdymzz3nna",
+    "questionId": 17
+  },
+  "RAINBOW.png": {
+    "answer": "RAINBOW",
+    "cid": "bafkreiea56gqum5hcp22yuybf4ib32cjiz2q4p6zk42yrh4wgg7kkwnepm",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreiea56gqum5hcp22yuybf4ib32cjiz2q4p6zk42yrh4wgg7kkwnepm",
+    "questionId": 18
+  },
+  "SEASON.png": {
+    "answer": "SEASON",
+    "cid": "bafkreidrl5x7lexligqbmias2tpnfu5sytwwlotwcdg2uodtok7y3yekwq",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreidrl5x7lexligqbmias2tpnfu5sytwwlotwcdg2uodtok7y3yekwq",
+    "questionId": 19
+  },
+  "STARFISH.png": {
+    "answer": "STARFISH",
+    "cid": "bafkreicsckzcvvsrofkdp2garqk5duxh2dflr372wrggafqsapnsveegt4",
+    "imageUrl": "https://gateway.pinata.cloud/ipfs/bafkreicsckzcvvsrofkdp2garqk5duxh2dflr372wrggafqsapnsveegt4",
+    "questionId": 20
+  }
+}

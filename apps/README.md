@@ -25,7 +25,7 @@ NEXT_PUBLIC_SOLANA_CLUSTER=localnet
 NEXT_PUBLIC_SOLANA_RPC_URL=http://127.0.0.1:8899
 NEXT_PUBLIC_SOLANA_WS_URL=ws://127.0.0.1:8900
 NEXT_PUBLIC_PRIVY_APP_ID=<privy_app_id>
-NEXT_PUBLIC_DUELPIC_PROGRAM_ID=<program_id>
+NEXT_PUBLIC_DUELSNAP_PROGRAM_ID=<program_id>
 NEXT_PUBLIC_PAYMENT_MINT=<mock_usdc_spl_mint>
 NEXT_PUBLIC_PAYMENT_SYMBOL=USDC
 NEXT_PUBLIC_PAYMENT_DECIMALS=6
@@ -65,4 +65,15 @@ pnpm format
 pnpm seed
 ```
 
-`pnpm seed` uploads seed images to Pinata, submits questions to the Solana program, verifies them, and writes answers/image URLs to Redis.
+`pnpm dev` and `pnpm build` run with Turbopack.
+
+`pnpm seed` uploads seed images to Pinata, submits questions to the Solana program, verifies them, and writes answers/image URLs to Redis. You can also run the root scripts from the repository root:
+
+```bash
+./scripts/deploy-smart-contract.sh
+pnpm --dir apps init:devnet
+./scripts/upload-images-to-ipfs.sh
+./scripts/reseed-images-to-smart-contract.sh
+./scripts/seed-new-images-to-redis.sh
+./scripts/upgrade-smart-contract.sh
+```

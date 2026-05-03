@@ -12,7 +12,7 @@ import {
 } from "@solana/web3.js";
 import { getPaymentMint } from "./config";
 import { createSolanaConnection } from "./connection";
-import { createDuelpicProgram } from "./program";
+import { createDuelSnapProgram } from "./program";
 
 export type BrowserSolanaWallet = {
   publicKey: PublicKey;
@@ -22,7 +22,7 @@ export type BrowserSolanaWallet = {
   disconnect?: () => Promise<void>;
 };
 
-export function createBrowserDuelpicProgram(wallet: BrowserSolanaWallet) {
+export function createBrowserDuelSnapProgram(wallet: BrowserSolanaWallet) {
   const connection = createSolanaConnection();
   const providerWallet: AnchorProvider["wallet"] = {
     publicKey: wallet.publicKey,
@@ -42,7 +42,7 @@ export function createBrowserDuelpicProgram(wallet: BrowserSolanaWallet) {
   };
   return {
     connection,
-    program: createDuelpicProgram(connection, providerWallet),
+    program: createDuelSnapProgram(connection, providerWallet),
   };
 }
 

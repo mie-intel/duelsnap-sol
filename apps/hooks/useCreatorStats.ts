@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 import { createSolanaConnection } from "../lib/solana/connection";
 import { configPda, questionPda, royaltyPda } from "../lib/solana/pda";
-import { createReadonlyDuelpicProgram } from "../lib/solana/program";
+import { createReadonlyDuelSnapProgram } from "../lib/solana/program";
 
 export type CreatorQuestion = {
   id: number;
@@ -47,7 +47,7 @@ export function useCreatorStats(address?: string | null) {
       if (showSpinner) setLoading(true);
       try {
         const connection = createSolanaConnection();
-        const program = createReadonlyDuelpicProgram(connection);
+        const program = createReadonlyDuelSnapProgram(connection);
         const config = await program.account.config.fetch(configPda());
         const questionCount =
           typeof config.questionCount === "number"

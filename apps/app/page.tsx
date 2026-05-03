@@ -29,7 +29,7 @@ export default function Home() {
   const { address, isConnected, isReady, login } = useWallet();
 
   return (
-    <div className="flex flex-col flex-1 bg-bg-page">
+    <div className="flex flex-col flex-1">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 bg-bg-card shadow-sm">
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export default function Home() {
             <span className="text-primary">Win the Duel.</span>
           </h1>
           <p className="mt-3 text-text-secondary text-base">
-            Bright picture rounds, Solana rewards, and quick 1v1 battles.
+            Bright picture rounds, real rewards, and quick 1v1 battles.
           </p>
         </div>
 

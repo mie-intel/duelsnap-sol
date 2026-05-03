@@ -10,7 +10,7 @@ import Button from "../../../../components/ui/Button";
 import Spinner from "../../../../components/ui/Spinner";
 import { useWallet } from "../../../../hooks/useWallet";
 import {
-  createBrowserDuelpicProgram,
+  createBrowserDuelSnapProgram,
   createPaymentAtaInstruction,
   sendWalletTransaction,
 } from "../../../../lib/solana/client";
@@ -54,7 +54,7 @@ export default function PvpLobbyPage() {
 
   const ensureWagerBalance = useCallback(async () => {
     if (!walletClient) throw new Error("Wallet signer is not ready yet.");
-    const { connection } = createBrowserDuelpicProgram(walletClient);
+    const { connection } = createBrowserDuelSnapProgram(walletClient);
     const token = paymentAta(walletClient.publicKey);
     const balance = await connection.getTokenAccountBalance(token);
     if (BigInt(balance.value.amount) < BigInt(WAGER_RAW)) {
@@ -65,7 +65,7 @@ export default function PvpLobbyPage() {
   const sendCreateSession = useCallback(
     async (sessionId: string, questionIds: string[]) => {
       if (!walletClient) throw new Error("Wallet signer is not ready yet.");
-      const { program } = createBrowserDuelpicProgram(walletClient);
+      const { program } = createBrowserDuelSnapProgram(walletClient);
       const seed = sessionSeedFromHex(sessionId);
       const session = sessionPda(seed);
       const vaultAuthority = sessionVaultAuthorityPda(session);
@@ -101,7 +101,7 @@ export default function PvpLobbyPage() {
   const sendJoinSession = useCallback(
     async (sessionId: string) => {
       if (!walletClient) throw new Error("Wallet signer is not ready yet.");
-      const { program } = createBrowserDuelpicProgram(walletClient);
+      const { program } = createBrowserDuelSnapProgram(walletClient);
       const session = sessionAddressFromId(sessionId);
       const vaultAuthority = sessionVaultAuthorityPda(session);
       const vault = createPaymentAtaInstruction(vaultAuthority, walletClient.publicKey, true);

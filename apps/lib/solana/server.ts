@@ -1,7 +1,10 @@
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import fs from "fs";
+import os from "os";
+import path from "path";
 import { createSolanaConnection } from "./connection";
-import { createDuelpicProgram } from "./program";
+import { createDuelSnapProgram } from "./program";
 
 type ServerSignerName =
   | "RELAYER_KEYPAIR_JSON"
@@ -10,7 +13,9 @@ type ServerSignerName =
 
 function keypairFromJsonEnv(name: ServerSignerName) {
   const raw = process.env[name];
-  if (!raw) throw new Error(`${name} is not configured`);
+  if (!raw) {
+    return keypairFromSolanaConfig(name);
+  }
 
   let secret: unknown;
   try {
@@ -21,6 +26,31 @@ function keypairFromJsonEnv(name: ServerSignerName) {
 
   if (!Array.isArray(secret)) {
     throw new Error(`${name} must be a JSON array keypair`);
+  }
+
+  return Keypair.fromSecretKey(Uint8Array.from(secret));
+}
+
+function keypairFromSolanaConfig(name: ServerSignerName) {
+  const keypairPath =
+    process.env.SOLANA_KEYPAIR_PATH ??
+    path.join(os.homedir(), ".config/solana/id.json");
+
+  if (!fs.existsSync(keypairPath)) {
+    throw new Error(
+      `${name} is not configured and Solana keypair was not found at ${keypairPath}`,
+    );
+  }
+
+  let secret: unknown;
+  try {
+    secret = JSON.parse(fs.readFileSync(keypairPath, "utf8"));
+  } catch {
+    throw new Error(`${keypairPath} must be a JSON array keypair`);
+  }
+
+  if (!Array.isArray(secret)) {
+    throw new Error(`${keypairPath} must be a JSON array keypair`);
   }
 
   return Keypair.fromSecretKey(Uint8Array.from(secret));
@@ -54,9 +84,9 @@ function walletFromKeypair(keypair: Keypair): AnchorProvider["wallet"] {
   };
 }
 
-export function createServerDuelpicProgram(keypair: Keypair) {
+export function createServerDuelSnapProgram(keypair: Keypair) {
   const connection = createSolanaConnection();
-  const program = createDuelpicProgram(connection, walletFromKeypair(keypair));
+  const program = createDuelSnapProgram(connection, walletFromKeypair(keypair));
   return { connection, program };
 }
 

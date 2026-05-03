@@ -1,32 +1,32 @@
 import { AnchorProvider, type Idl, Program } from "@coral-xyz/anchor";
 import { type Connection, Keypair } from "@solana/web3.js";
-import { getDuelpicProgramId } from "./config";
-import idl from "./idl/duelpic.json";
-import type { Duelpic } from "./types/duelpic";
+import { getDuelSnapProgramId } from "./config";
+import idl from "./idl/duelsnap.json";
+import type { Duelsnap as DuelSnap } from "./types/duelsnap";
 
 type AnchorWallet = AnchorProvider["wallet"];
 
-export function createDuelpicProgram(
+export function createDuelSnapProgram(
   connection: Connection,
   wallet: AnchorWallet,
 ) {
-  const programId = getDuelpicProgramId();
+  const programId = getDuelSnapProgramId();
   const runtimeIdl = { ...idl, address: programId.toBase58() } as Idl;
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed",
     preflightCommitment: "confirmed",
   });
 
-  return new Program<Duelpic>(runtimeIdl, provider);
+  return new Program<DuelSnap>(runtimeIdl, provider);
 }
 
-export function createReadonlyDuelpicProgram(connection: Connection) {
+export function createReadonlyDuelSnapProgram(connection: Connection) {
   const readonlyKeypair = Keypair.generate();
-  return createDuelpicProgram(connection, {
+  return createDuelSnapProgram(connection, {
     publicKey: readonlyKeypair.publicKey,
     signAllTransactions: async (transactions) => transactions,
     signTransaction: async (transaction) => transaction,
   });
 }
 
-export const DUELPIC_PROGRAM_ID = getDuelpicProgramId();
+export const DUELSNAP_PROGRAM_ID = getDuelSnapProgramId();

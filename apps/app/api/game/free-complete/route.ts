@@ -3,7 +3,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { configPda, dailyPlayPda } from "../../../../lib/solana/pda";
 import {
-  createServerDuelpicProgram,
+  createServerDuelSnapProgram,
   getRelayerKeypair,
   parseSolanaAddress,
 } from "../../../../lib/solana/server";
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const { address } = await req.json();
     const player = parseSolanaAddress(address);
     const relayer = getRelayerKeypair();
-    const { program } = createServerDuelpicProgram(relayer);
+    const { program } = createServerDuelSnapProgram(relayer);
     const dayId = currentDayId();
     const dailyPlay = dailyPlayPda(player, dayId);
 

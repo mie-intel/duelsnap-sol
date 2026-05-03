@@ -109,7 +109,7 @@ export default function GameEngine({
   }
 
   return (
-    <div className="flex flex-col flex-1 px-5 py-4 gap-4 bg-bg-page">
+    <div className="flex flex-col flex-1 px-5 py-4 gap-4">
       <TimerBar
         durationMs={secondsPerQuestion * 1000}
         onExpire={handleExpire}

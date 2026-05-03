@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "seed": "npx tsx scripts/seed-questions.ts"
+    "seed": "npx tsx scripts/seed-questions.ts",
+    "seed:ipfs": "SEED_MODE=upload npx tsx scripts/seed-questions.ts",
+    "seed:redis": "SEED_MODE=redis npx tsx scripts/seed-questions.ts",
+    "seed:onchain": "SEED_MODE=onchain npx tsx scripts/seed-questions.ts",
+    "init:devnet": "npx tsx scripts/initialize-devnet.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

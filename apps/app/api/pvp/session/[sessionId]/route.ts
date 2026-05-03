@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { redis } from "../../../../../lib/redis/client";
 import { parseRedisArray } from "../../../../../lib/redis/json";
 import { createSolanaConnection } from "../../../../../lib/solana/connection";
-import { createReadonlyDuelpicProgram } from "../../../../../lib/solana/program";
+import { createReadonlyDuelSnapProgram } from "../../../../../lib/solana/program";
 import { sessionAddressFromId } from "../../../../../lib/solana/pvp";
 
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { sessionId } = await params;
     const connection = createSolanaConnection();
-    const program = createReadonlyDuelpicProgram(connection);
+    const program = createReadonlyDuelSnapProgram(connection);
     const session = await program.account.session.fetch(
       sessionAddressFromId(sessionId),
     );

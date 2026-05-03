@@ -12,13 +12,13 @@ import {
   royaltyVaultAuthorityPda,
   sessionVaultAuthorityPda,
 } from "../../../../../lib/solana/pda";
-import { createReadonlyDuelpicProgram } from "../../../../../lib/solana/program";
+import { createReadonlyDuelSnapProgram } from "../../../../../lib/solana/program";
 import {
   sessionAddressFromId,
   solanaWinner,
 } from "../../../../../lib/solana/pvp";
 import {
-  createServerDuelpicProgram,
+  createServerDuelSnapProgram,
   getRelayerKeypair,
 } from "../../../../../lib/solana/server";
 import { paymentAta } from "../../../../../lib/solana/token";
@@ -113,7 +113,7 @@ export async function POST(
 
 async function fetchSession(sessionId: string) {
   const connection = createSolanaConnection();
-  const program = createReadonlyDuelpicProgram(connection);
+  const program = createReadonlyDuelSnapProgram(connection);
   const session = await program.account.session.fetch(
     sessionAddressFromId(sessionId),
   );
@@ -132,12 +132,12 @@ async function resolveSession(
   score2: number,
 ) {
   const relayer = getRelayerKeypair();
-  const { program } = createServerDuelpicProgram(relayer);
+  const { program } = createServerDuelSnapProgram(relayer);
   const sessionAddress = sessionAddressFromId(sessionId);
   const session = await program.account.session.fetch(sessionAddress);
   const questionIds = session.questionIds
     .slice(0, Number(session.questionCount))
-    .map(Number);
+    .map((id: unknown) => Number(id));
   const questionAccounts = await Promise.all(
     questionIds.map(async (id) => {
       const question = questionPda(id);
