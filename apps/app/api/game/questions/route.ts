@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
+import { ipfsUrl } from "../../../../lib/ipfs";
 import { redis } from "../../../../lib/redis/client";
 import { createSolanaConnection } from "../../../../lib/solana/connection";
 import { questionPda, verifiedPoolPda } from "../../../../lib/solana/pda";
 import { createReadonlyDuelSnapProgram } from "../../../../lib/solana/program";
 import { verifiedPoolIdsToNumbers } from "../../../../lib/solana/questions";
-
-const IPFS_GATEWAY =
-  process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? "https://gateway.pinata.cloud";
 
 function shuffle<T>(items: T[], seed: number) {
   const result = [...items];
@@ -59,9 +57,7 @@ export async function GET(req: Request) {
             questionPda(id),
           );
           const ipfsHash = question.ipfsHash;
-          return ipfsHash
-            ? { id, imageUrl: `${IPFS_GATEWAY}/ipfs/${ipfsHash}` }
-            : null;
+          return ipfsHash ? { id, imageUrl: ipfsUrl(ipfsHash) } : null;
         } catch {
           return null;
         }

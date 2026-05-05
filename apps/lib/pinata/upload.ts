@@ -1,8 +1,16 @@
-import { PinataSDK } from 'pinata';
+import { PinataSDK } from "pinata";
+import { ipfsUrl } from "../ipfs";
+
+function getPinataJwt() {
+  const jwt = process.env.PINATA_JWT;
+  if (!jwt) throw new Error("PINATA_JWT is not configured");
+  return jwt;
+}
 
 const pinata = new PinataSDK({
-  pinataJwt: process.env.PINATA_JWT!,
-  pinataGateway: process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud',
+  pinataJwt: getPinataJwt(),
+  pinataGateway:
+    process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? "https://gateway.pinata.cloud",
 });
 
 export async function uploadImageToIPFS(file: File): Promise<string> {
@@ -11,6 +19,5 @@ export async function uploadImageToIPFS(file: File): Promise<string> {
 }
 
 export function getIPFSUrl(hash: string): string {
-  const gateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud';
-  return `${gateway}/ipfs/${hash}`;
+  return ipfsUrl(hash);
 }

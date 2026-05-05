@@ -27,15 +27,17 @@ export default function PvpSessionPage() {
   >("waiting");
   const [loadingQ, setLoadingQ] = useState(false);
   const [error, setError] = useState("");
+  const [resolvedWinner, setResolvedWinner] = useState<string | null>(null);
+  const winner = session.winner ?? resolvedWinner;
 
   useEffect(() => {
-    if (!session.winner || !address) return;
+    if (!winner || !address) return;
 
     const logKey = `duelsnap_pvp_logged_${sessionId}_${address.toLowerCase()}`;
     if (localStorage.getItem(logKey) === "1") return;
 
-    const isTie = session.winner === "tie";
-    const isWinner = session.winner.toLowerCase() === address.toLowerCase();
+    const isTie = winner === "tie";
+    const isWinner = winner.toLowerCase() === address.toLowerCase();
     const amount = isTie ? -0.039 : isWinner ? 0.222 : -0.3;
     addEntry({
       mode: "competitive",
@@ -43,7 +45,7 @@ export default function PvpSessionPage() {
       amount,
     });
     localStorage.setItem(logKey, "1");
-  }, [address, session.winner, sessionId, addEntry]);
+  }, [address, winner, sessionId, addEntry]);
 
   useEffect(() => {
     if (
@@ -67,10 +69,16 @@ export default function PvpSessionPage() {
   }, [session.status, session.questionIds, questions.length, loadingQ]);
 
   useEffect(() => {
-    if (session.winner && phase !== "done") {
+    if (winner && phase !== "done") {
       setPhase("done");
     }
-  }, [session.winner, phase]);
+  }, [winner, phase]);
+
+  useEffect(() => {
+    if (session.resolveError) {
+      setError(session.resolveError);
+    }
+  }, [session.resolveError]);
 
   const handleComplete = useCallback(
     async (results: QuestionResult[]) => {
@@ -84,12 +92,14 @@ export default function PvpSessionPage() {
           body: JSON.stringify({ playerAddress: address, answers }),
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Failed to submit answers");
 
         if (data.status === "resolved") {
+          setResolvedWinner(data.winner ?? null);
           setPhase("done");
         }
-      } catch {
-        setError("Failed to submit answers");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to submit answers");
       }
     },
     [address, sessionId],
@@ -225,9 +235,9 @@ export default function PvpSessionPage() {
     );
   }
 
-  if (phase === "done" && session.winner) {
-    const isWinner = session.winner.toLowerCase() === address?.toLowerCase();
-    const isTie = session.winner === "tie";
+  if (phase === "done" && winner) {
+    const isWinner = winner.toLowerCase() === address?.toLowerCase();
+    const isTie = winner === "tie";
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pb-24">
         {isTie ? (

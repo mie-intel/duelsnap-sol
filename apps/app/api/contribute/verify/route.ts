@@ -19,8 +19,7 @@ import {
 } from "../../../../lib/solana/server";
 
 const AI_FAILS_AS_ERROR = process.env.AI_FAILS_AS_ERROR !== "false";
-// const SKIP_AI_VERIFICATION = process.env.SKIP_AI_VERIFICATION === "true";
-const SKIP_AI_VERIFICATION = true; // TEMP: Force skip AI verification while Gemini is having issues
+const QUESTION_REVIEW_MODE = process.env.QUESTION_REVIEW_MODE ?? "assisted";
 const AI_FALLBACK_DIFFICULTY = 2;
 
 const difficultyMap: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
@@ -71,13 +70,60 @@ type VerifyResponse =
       signature: string;
     }
   | { status: "rejected"; questionId: number; reason: string }
-  | { status: "error"; questionId: number; reason: string };
+  | { status: "error"; questionId: number; reason: string; stage?: string };
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Request failed";
+}
+
+function errorResponse(
+  questionId: number | null,
+  reason: string,
+  status = 500,
+  stage?: string,
+) {
+  return NextResponse.json(
+    {
+      error: reason,
+      reason,
+      status: "error",
+      questionId: questionId ?? undefined,
+      stage,
+    },
+    { status },
+  );
+}
+
+function shouldAutoApprove() {
+  return QUESTION_REVIEW_MODE !== "strict";
+}
+
+async function approveAndRespond(
+  questionId: number,
+  difficulty = "medium",
+): Promise<Response> {
+  const signature = await approveQuestionOnchain(
+    questionId,
+    difficultyMap[difficulty] ?? AI_FALLBACK_DIFFICULTY,
+  );
+  const response: VerifyResponse = {
+    status: "approved",
+    questionId,
+    difficulty,
+    signature,
+  };
+  await redis.set(`contribute:${questionId}`, JSON.stringify(response), {
+    ex: 3600,
+  });
+  return NextResponse.json(response);
+}
 
 export async function POST(req: Request) {
   try {
     const { questionId, imageUrl, answer } = await req.json();
+    const numericQuestionId = Number(questionId);
 
-    if (!questionId || !imageUrl || !answer) {
+    if (!numericQuestionId || !imageUrl || !answer) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
     if (!/^\S{2,40}$/.test(answer)) {
@@ -87,40 +133,44 @@ export async function POST(req: Request) {
       );
     }
 
-    const question = await getQuestionRecord(questionId);
+    let question: Awaited<ReturnType<typeof getQuestionRecord>>;
+    try {
+      question = await getQuestionRecord(numericQuestionId);
+    } catch (e) {
+      return errorResponse(
+        numericQuestionId,
+        errorMessage(e),
+        500,
+        "fetch_question",
+      );
+    }
+
     const fetchedId =
       typeof question.id === "number" ? question.id : question.id.toNumber();
-    if (!question || fetchedId !== Number(questionId)) {
+    if (!question || fetchedId !== numericQuestionId) {
       return NextResponse.json(
         { error: "Question does not exist onchain" },
         { status: 400 },
       );
     }
 
-    const key = `contribute:${questionId}`;
-    await redis.set(key, JSON.stringify({ status: "verifying", questionId }), {
-      ex: 3600,
-    });
-    await Promise.all([
-      redis.set(`question:${questionId}:imageUrl`, imageUrl),
-      redis.set(`question:${questionId}:answer`, answer.toUpperCase()),
-    ]);
+    try {
+      await redis.set(
+        `contribute:${numericQuestionId}`,
+        JSON.stringify({ status: "verifying", questionId: numericQuestionId }),
+        { ex: 3600 },
+      );
+      await Promise.all([
+        redis.set(`question:${numericQuestionId}:imageUrl`, imageUrl),
+        redis.set(`question:${numericQuestionId}:answer`, answer.toUpperCase()),
+      ]);
+    } catch (e) {
+      return errorResponse(numericQuestionId, errorMessage(e), 500, "redis");
+    }
 
     try {
-      // Bypass AI verification if SKIP_AI_VERIFICATION is enabled
-      if (SKIP_AI_VERIFICATION) {
-        const signature = await approveQuestionOnchain(
-          questionId,
-          AI_FALLBACK_DIFFICULTY,
-        );
-        const response: VerifyResponse = {
-          status: "approved",
-          questionId,
-          difficulty: "medium",
-          signature,
-        };
-        await redis.set(key, JSON.stringify(response), { ex: 3600 });
-        return NextResponse.json(response);
+      if (shouldAutoApprove()) {
+        return await approveAndRespond(numericQuestionId);
       }
 
       const result = await verifyQuestionImage(imageUrl, answer);
@@ -129,55 +179,65 @@ export async function POST(req: Request) {
       if (!approved) {
         const response: VerifyResponse = {
           status: "rejected",
-          questionId,
+          questionId: numericQuestionId,
           reason: result.rejectReason ?? "Did not pass AI verification",
         };
-        await redis.set(key, JSON.stringify(response), { ex: 3600 });
+        await redis.set(
+          `contribute:${numericQuestionId}`,
+          JSON.stringify(response),
+          {
+            ex: 3600,
+          },
+        );
         return NextResponse.json(response);
       }
 
       const difficulty = difficultyMap[result.difficulty] ?? 2;
-      const signature = await approveQuestionOnchain(questionId, difficulty);
+      const signature = await approveQuestionOnchain(
+        numericQuestionId,
+        difficulty,
+      );
       const response: VerifyResponse = {
         status: "approved",
-        questionId,
+        questionId: numericQuestionId,
         difficulty: result.difficulty,
         signature,
       };
-      await redis.set(key, JSON.stringify(response), { ex: 3600 });
+      await redis.set(
+        `contribute:${numericQuestionId}`,
+        JSON.stringify(response),
+        {
+          ex: 3600,
+        },
+      );
       return NextResponse.json(response);
     } catch (e) {
       const aiFallbackError = isRetryableGeminiError(e);
 
       if (aiFallbackError && !AI_FAILS_AS_ERROR) {
-        const signature = await approveQuestionOnchain(
-          questionId,
-          AI_FALLBACK_DIFFICULTY,
-        );
-        const response: VerifyResponse = {
-          status: "approved",
-          questionId,
-          difficulty: "medium",
-          signature,
-        };
-        await redis.set(key, JSON.stringify(response), { ex: 3600 });
-        return NextResponse.json(response);
+        return await approveAndRespond(numericQuestionId);
       }
 
       const response: VerifyResponse = {
         status: "error",
-        questionId,
+        questionId: numericQuestionId,
         reason: aiFallbackError
           ? "AI verification is temporarily overloaded. Please retry in a minute."
           : e instanceof Error
             ? e.message
             : "Verification error",
+        stage: shouldAutoApprove() ? "approve_question" : "review_image",
       };
-      await redis.set(key, JSON.stringify(response), { ex: 3600 });
-      return NextResponse.json(response);
+      await redis.set(
+        `contribute:${numericQuestionId}`,
+        JSON.stringify(response),
+        {
+          ex: 3600,
+        },
+      );
+      return NextResponse.json(response, { status: 500 });
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Request failed";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return errorResponse(null, errorMessage(e), 500, "request");
   }
 }

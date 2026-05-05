@@ -6,6 +6,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { PinataSDK } from "pinata";
+import { ipfsUrl } from "../lib/ipfs";
 import { configPda, questionPda, verifiedPoolPda } from "../lib/solana/pda";
 import { verifiedPoolPageForQuestion } from "../lib/solana/questions";
 import { createServerDuelSnapProgram } from "../lib/solana/server";
@@ -123,7 +124,7 @@ async function uploadImages(answers: Record<string, string>) {
     manifest[filename] = {
       answer: answer.toUpperCase(),
       cid,
-      imageUrl: `${GATEWAY}/ipfs/${cid}`,
+      imageUrl: ipfsUrl(cid, GATEWAY),
     };
     writeManifest(manifest);
   }

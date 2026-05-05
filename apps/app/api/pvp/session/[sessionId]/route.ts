@@ -5,6 +5,21 @@ import { createSolanaConnection } from "../../../../../lib/solana/connection";
 import { createReadonlyDuelSnapProgram } from "../../../../../lib/solana/program";
 import { sessionAddressFromId } from "../../../../../lib/solana/pvp";
 
+const STATUS_DONE = 4;
+
+function inferWinnerFromSession(session: {
+  player1: { toBase58(): string };
+  player2: { toBase58(): string };
+  score1: number;
+  score2: number;
+  status: number;
+}) {
+  if (session.status !== STATUS_DONE) return null;
+  if (session.score1 > session.score2) return session.player1.toBase58();
+  if (session.score2 > session.score1) return session.player2.toBase58();
+  return "tie";
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ sessionId: string }> },
@@ -21,7 +36,11 @@ export async function GET(
     const questionIds = parseRedisArray<string | number | bigint>(qRaw).map(
       String,
     );
-    const winner = await redis.get<string>(`pvp:${sessionId}:winner`);
+    const [storedWinner, resolveError] = await Promise.all([
+      redis.get<string>(`pvp:${sessionId}:winner`),
+      redis.get<string>(`pvp:${sessionId}:resolveError`),
+    ]);
+    const winner = storedWinner ?? inferWinnerFromSession(session);
 
     return NextResponse.json({
       id: sessionId,
@@ -31,7 +50,8 @@ export async function GET(
       wager: session.wager.toString(),
       status: session.status,
       questionIds,
-      winner: winner ?? null,
+      winner,
+      resolveError: resolveError ?? null,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed";

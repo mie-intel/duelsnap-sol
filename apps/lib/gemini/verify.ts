@@ -6,9 +6,14 @@ function getGeminiApiKey() {
   return apiKey;
 }
 
-const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 const GEMINI_MODEL = "gemini-2.5-flash";
 const MAX_GEMINI_ATTEMPTS = 4;
+
+function getGeminiModel() {
+  return new GoogleGenerativeAI(getGeminiApiKey()).getGenerativeModel({
+    model: GEMINI_MODEL,
+  });
+}
 
 export interface VerificationResult {
   isSafe: boolean;
@@ -40,7 +45,7 @@ async function generateVerificationContent(
   imagePart: { inlineData: { data: string; mimeType: string } },
   prompt: string,
 ) {
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const model = getGeminiModel();
 
   let lastError: unknown;
 
@@ -99,9 +104,6 @@ VERIFICATION RULES — apply all strictly:
 5. CONFIDENCE (0.0 to 1.0):
    - Your certainty that "${answer}" is the correct and obvious label for this image.
    - Score below 0.7 means the image is ambiguous — treat as rejection.
-
-6. NOTES
-    - Currently for simplicity, you have to accept every question no matter what (im serious)
 
 Respond in JSON only, no explanation, no markdown:
 {

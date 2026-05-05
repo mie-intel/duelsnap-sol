@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PinataSDK } from "pinata";
+import { ipfsUrl } from "../../../../lib/ipfs";
 
 const pinataJwt = process.env.PINATA_JWT;
 if (!pinataJwt) {
@@ -33,9 +34,7 @@ export async function POST(req: Request) {
     }
 
     const result = await pinata.upload.public.file(file);
-    const gateway =
-      process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? "https://gateway.pinata.cloud";
-    const imageUrl = `${gateway}/ipfs/${result.cid}`;
+    const imageUrl = ipfsUrl(result.cid);
 
     return NextResponse.json({ cid: result.cid, imageUrl });
   } catch (e) {

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 export type SessionStatus = 0 | 1 | 2 | 3 | 4;
 
@@ -12,19 +12,21 @@ export interface SessionState {
   status: SessionStatus;
   questionIds: string[];
   winner: string | null;
+  resolveError: string | null;
   loading: boolean;
   error: string | null;
 }
 
 export function useGameSession(sessionId: string | null, pollMs = 3000) {
   const [state, setState] = useState<SessionState>({
-    id: '',
-    player1: '',
-    player2: '',
-    wager: '0',
+    id: "",
+    player1: "",
+    player2: "",
+    wager: "0",
     status: 0,
     questionIds: [],
     winner: null,
+    resolveError: null,
     loading: true,
     error: null,
   });
@@ -40,7 +42,7 @@ export function useGameSession(sessionId: string | null, pollMs = 3000) {
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: e instanceof Error ? e.message : 'Failed',
+        error: e instanceof Error ? e.message : "Failed",
       }));
     }
   }, [sessionId]);

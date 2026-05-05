@@ -3,7 +3,10 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { redis } from "../../../../../lib/redis/client";
 import { parseRedisArray } from "../../../../../lib/redis/json";
-import { getPaymentMint, getTreasuryAddress } from "../../../../../lib/solana/config";
+import {
+  getPaymentMint,
+  getTreasuryAddress,
+} from "../../../../../lib/solana/config";
 import { createSolanaConnection } from "../../../../../lib/solana/connection";
 import {
   configPda,
@@ -22,6 +25,9 @@ import {
   getRelayerKeypair,
 } from "../../../../../lib/solana/server";
 import { paymentAta } from "../../../../../lib/solana/token";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const PVP_WAGER_RAW = 300_000;
 const PVP_POOL_RAW = PVP_WAGER_RAW * 2;
@@ -98,10 +104,14 @@ export async function POST(
         error instanceof Error
           ? error.message
           : "Failed to resolve PvP session";
+      await redis.set(`pvp:${sessionId}:resolveError`, msg, { ex: 3600 });
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 
-    await redis.set(`pvp:${sessionId}:winner`, winner, { ex: 3600 });
+    await Promise.all([
+      redis.set(`pvp:${sessionId}:winner`, winner, { ex: 3600 }),
+      redis.del(`pvp:${sessionId}:resolveError`),
+    ]);
     await trackPvpContributorEarnings(questionIds);
 
     return NextResponse.json({ status: "resolved", winner, score1, score2 });

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { BN } from "@coral-xyz/anchor";
 import { SystemProgram } from "@solana/web3.js";
-import { useWallet } from "../../../../hooks/useWallet";
-import { createBrowserDuelSnapProgram } from "../../../../lib/solana/client";
-import { configPda, questionPda } from "../../../../lib/solana/pda";
-import Button from "../../../../components/ui/Button";
-import Card from "../../../../components/ui/Card";
-import Spinner from "../../../../components/ui/Spinner";
+import { useRouter } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import {
+  AlertIcon,
   CameraIcon,
   CheckCircleIcon,
   XCircleIcon,
-  AlertIcon,
 } from "../../../../components/icons";
+import Button from "../../../../components/ui/Button";
+import Card from "../../../../components/ui/Card";
+import Spinner from "../../../../components/ui/Spinner";
+import { useWallet } from "../../../../hooks/useWallet";
+import { createBrowserDuelSnapProgram } from "../../../../lib/solana/client";
+import { configPda, questionPda } from "../../../../lib/solana/pda";
 
 type Step =
   | "form"
@@ -31,6 +31,8 @@ interface VerifyStatus {
   difficulty?: string;
   signature?: string;
   reason?: string;
+  error?: string;
+  stage?: string;
 }
 
 export default function ContributeSubmitPage() {
@@ -75,7 +77,7 @@ export default function ContributeSubmitPage() {
         const res = await fetch(`/api/contribute/${questionId}/status`);
         const data: VerifyStatus = await res.json();
         if (data.status !== "verifying") {
-          clearInterval(pollRef.current!);
+          if (pollRef.current) clearInterval(pollRef.current);
           setVerifyStatus(data);
           setStep("done");
         }
@@ -146,7 +148,10 @@ export default function ContributeSubmitPage() {
         verifyData,
       );
       if (!verifyRes.ok) {
-        throw new Error(verifyData.reason ?? "Verification failed");
+        const details = verifyData.stage ? ` (${verifyData.stage})` : "";
+        throw new Error(
+          `${verifyData.reason ?? verifyData.error ?? "Verification failed"}${details}`,
+        );
       }
 
       if (verifyData.status === "verifying") {
@@ -280,11 +285,7 @@ export default function ContributeSubmitPage() {
   }
 
   // Verifying / loading states
-  if (
-    step === "uploading" ||
-    step === "submitting" ||
-    step === "verifying"
-  ) {
+  if (step === "uploading" || step === "submitting" || step === "verifying") {
     const stepLabels: Record<Step, string> = {
       uploading: "Uploading image…",
       submitting: "Submitting to blockchain…",
@@ -353,6 +354,7 @@ export default function ContributeSubmitPage() {
       <div className="bg-bg-card px-5 pt-8 pb-6 shadow-sm">
         <div className="max-w-lg mx-auto flex items-center gap-4">
           <button
+            type="button"
             onClick={() => router.push("/contribute")}
             className="w-9 h-9 rounded-xl bg-bg-page flex items-center justify-center text-text-secondary hover:text-text-primary shrink-0"
           >
@@ -416,6 +418,7 @@ export default function ContributeSubmitPage() {
           </div>
           {imagePreview && (
             <button
+              type="button"
               onClick={() => {
                 setImageFile(null);
                 setImagePreview(null);
