@@ -1,0 +1,71 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e6]:
+        - img "DuelSnap" [ref=e7]
+        - generic [ref=e8]: DuelSnap
+      - main [ref=e11]:
+        - generic [ref=e12]:
+          - heading "Snap the Clue. Win the Duel." [level=1] [ref=e13]:
+            - text: Snap the Clue.
+            - text: Win the Duel.
+          - paragraph [ref=e14]: Bright picture rounds, real rewards, and quick 1v1 battles.
+        - generic [ref=e15]:
+          - link "Free Casual FREE 5 questions · 3 rounds/day · No wallet needed ›" [ref=e16] [cursor=pointer]:
+            - /url: /casual
+            - generic [ref=e18]:
+              - img [ref=e20]
+              - generic [ref=e24]:
+                - generic [ref=e25]:
+                  - heading "Free Casual" [level=3] [ref=e26]
+                  - generic [ref=e27]: FREE
+                - paragraph [ref=e28]: 5 questions · 3 rounds/day · No wallet needed
+              - generic [ref=e29]: ›
+          - link "Paid Casual 0.03 USDC 10 questions · Earn royalties · Contributors rewarded ›" [ref=e30] [cursor=pointer]:
+            - /url: /casual?mode=paid
+            - generic [ref=e32]:
+              - img [ref=e34]
+              - generic [ref=e38]:
+                - generic [ref=e39]:
+                  - heading "Paid Casual" [level=3] [ref=e40]
+                  - generic [ref=e41]: 0.03 USDC
+                - paragraph [ref=e42]: 10 questions · Earn royalties · Contributors rewarded
+              - generic [ref=e43]: ›
+          - link "PvP Ranked 0.30 USDC 1v1 · 10 questions · Winner takes 87% ›" [ref=e44] [cursor=pointer]:
+            - /url: /pvp/lobby
+            - generic [ref=e46]:
+              - img [ref=e48]
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - heading "PvP Ranked" [level=3] [ref=e52]
+                  - generic [ref=e53]: 0.30 USDC
+                - paragraph [ref=e54]: 1v1 · 10 questions · Winner takes 87%
+              - generic [ref=e55]: ›
+          - link "Contribute Questions Submit images · AI verified · Earn royalties forever ›" [ref=e56] [cursor=pointer]:
+            - /url: /contribute
+            - generic [ref=e58]:
+              - img [ref=e60]
+              - generic [ref=e66]:
+                - heading "Contribute Questions" [level=3] [ref=e67]
+                - paragraph [ref=e68]: Submit images · AI verified · Earn royalties forever
+              - generic [ref=e69]: ›
+  - navigation [ref=e70]:
+    - generic [ref=e71]:
+      - link "Play" [ref=e72] [cursor=pointer]:
+        - /url: /
+        - img [ref=e73]
+        - generic [ref=e77]: Play
+      - link "Contribute" [ref=e78] [cursor=pointer]:
+        - /url: /contribute
+        - img [ref=e79]
+        - generic [ref=e85]: Contribute
+      - link "Activity" [ref=e86] [cursor=pointer]:
+        - /url: /activity
+        - img [ref=e87]
+        - generic [ref=e90]: Activity
+      - link "Profile" [ref=e91] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e92]
+        - generic [ref=e95]: Profile
+  - button "Open Next.js Dev Tools" [ref=e101] [cursor=pointer]:
+    - img [ref=e102]

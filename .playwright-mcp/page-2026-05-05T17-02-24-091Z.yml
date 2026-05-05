@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]
+  - navigation [ref=e6]:
+    - generic [ref=e7]:
+      - link "Play" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e9]
+        - generic [ref=e13]: Play
+      - link "Contribute" [ref=e14] [cursor=pointer]:
+        - /url: /contribute
+        - img [ref=e15]
+        - generic [ref=e21]: Contribute
+      - link "Activity" [ref=e22] [cursor=pointer]:
+        - /url: /activity
+        - img [ref=e23]
+        - generic [ref=e26]: Activity
+      - link "Profile" [ref=e27] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e28]
+        - generic [ref=e31]: Profile
+  - button "Open Next.js Dev Tools" [ref=e37] [cursor=pointer]:
+    - img [ref=e38]
+  - alert [ref=e41]

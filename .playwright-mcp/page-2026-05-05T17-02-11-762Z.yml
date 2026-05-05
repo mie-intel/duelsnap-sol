@@ -1,0 +1,53 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic [ref=e14]:
+          - heading "Contribute Questions" [level=1] [ref=e15]
+          - paragraph [ref=e16]: Submit images · AI verified · Earn royalties forever
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: Earn passive royalties
+          - paragraph [ref=e20]: Contributors receive a share of every paid game session that uses their image — no limit, no expiry.
+        - generic [ref=e21]:
+          - heading "How it works" [level=2] [ref=e22]
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - generic [ref=e25]: "01"
+              - generic [ref=e26]:
+                - paragraph [ref=e27]: Submit Image
+                - paragraph [ref=e28]: Upload a clear photo of any real-world object, landmark, food, or animal.
+            - generic [ref=e29]:
+              - generic [ref=e30]: "02"
+              - generic [ref=e31]:
+                - paragraph [ref=e32]: AI Verification
+                - paragraph [ref=e33]: AI reviews your submission for quality and appropriate difficulty. Approved in minutes.
+            - generic [ref=e34]:
+              - generic [ref=e35]: "03"
+              - generic [ref=e36]:
+                - paragraph [ref=e37]: Earn Royalties
+                - paragraph [ref=e38]: Every time your image is used in a paid game, you earn a share of the pool. Forever.
+        - link "Submit an Image" [ref=e39] [cursor=pointer]:
+          - /url: /contribute/submit
+        - paragraph [ref=e40]: Requires wallet connection · AI verification takes ~2 min
+  - navigation [ref=e41]:
+    - generic [ref=e42]:
+      - link "Play" [ref=e43] [cursor=pointer]:
+        - /url: /
+        - img [ref=e44]
+        - generic [ref=e48]: Play
+      - link "Contribute" [ref=e49] [cursor=pointer]:
+        - /url: /contribute
+        - img [ref=e50]
+        - generic [ref=e56]: Contribute
+      - link "Activity" [ref=e57] [cursor=pointer]:
+        - /url: /activity
+        - img [ref=e58]
+        - generic [ref=e61]: Activity
+      - link "Profile" [ref=e62] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e63]
+        - generic [ref=e66]: Profile
+  - button "Open Next.js Dev Tools" [ref=e72] [cursor=pointer]:
+    - img [ref=e73]
