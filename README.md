@@ -4,7 +4,7 @@
 
 - Live MVP: https://duelsnap.vercel.app
 - GitHub: https://github.com/mie-intel/duelsnap-sol
-- Demo Video: https://youtu.be/pqV3g4XfDoQ
+- Demo Video: https://youtu.be/pqV3g4XfDoQ (the submitted link on colloseum is broken)
 - Pitch Video: https://youtu.be/kCEyHyxBiVU
 
 DuelSnap is a Solana picture-guessing game with on-chain rewards, PvP escrow,
